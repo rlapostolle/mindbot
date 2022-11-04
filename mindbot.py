@@ -8,7 +8,7 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
-@tree.command(name = "card", description = "Display a card by name")
+@tree.command(name = "card", description = "Display a card by name", guild=discord.Object(id= 1010510391878619146))
 async def card(interaction: discord.Interaction, card: str):
                 name=card.replace(' ', '_')
                 await interaction.response.send_message(f'https://mindbug.fandom.com/wiki/{name}')
@@ -19,7 +19,7 @@ async def on_ready():
     await tree.sync(guild=discord.Object(id= 1010510391878619146))
     print("Ready!")
 
-with open('myfile.txt') as f:
+with open('token.txt') as f:
 	token=f.read()
 	
 client.run(token)
