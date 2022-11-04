@@ -13,14 +13,13 @@ async def card(interaction: discord.Interaction, card: str):
 	name=card.replace(' ', '_')
 	await interaction.response.send_message(f'https://mindbug.fandom.com/wiki/{name}')
 	
-@tree.command(name = "randomcard", description = "Display a random card", guild=discord.Object(id= 1010510391878619146))
+@tree.command(name = "randomcard", description = "Display a random card")
 async def randomcard(interaction: discord.Interaction):
 	await interaction.response.send_message(f'https://mindbug.fandom.com/wiki/Shark_Dog')
 
 @client.event
 async def on_ready():
-	#use a specific guild as Mindbug France: 1010510391878619146, sync is faster in that case.
-	await tree.sync(guild=discord.Object(id= 1010510391878619146))
+	#Sync the commands with all server
 	await tree.sync()
 	print("Ready!")
 
