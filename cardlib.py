@@ -63,8 +63,9 @@ AllCards = FirstContact + NewCreatures + Promos
 def SearchSimilar(name: str):
 	highest=0.0
 	found=None
+	searchedVal=name.lower()
 	for card in AllCards:
-		val = ratio(name, card, score_cutoff=0.65)
+		val = ratio(searchedVal, card.lower(), score_cutoff=0.65)
 		if val > 0 and val > highest:
 			highest = val
 			found = card

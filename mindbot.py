@@ -14,7 +14,7 @@ tree = app_commands.CommandTree(client)
 async def card(interaction: discord.Interaction, card: str):
 	name = cardlib.SearchSimilar(card)
 	if name != None:
-		name = card.replace(' ', '_')
+		name = name.replace(' ', '_')
 		await interaction.response.send_message(f'https://mindbug.fandom.com/wiki/{name}')
 	else:
 		await interaction.response.send_message(f'No matching card')
