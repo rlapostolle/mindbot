@@ -19,4 +19,7 @@ async def on_ready():
     await tree.sync(guild=discord.Object(id= 1010510391878619146))
     print("Ready!")
 
-client.run(File.readlines("token.txt"))
+with open('myfile.txt') as f:
+	token=f.read()
+	
+client.run(token)
