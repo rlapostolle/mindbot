@@ -21,6 +21,7 @@ async def randomcard(interaction: discord.Interaction):
 async def on_ready():
 	#use a specific guild as Mindbug France: 1010510391878619146, sync is faster in that case.
 	await tree.sync(guild=discord.Object(id= 1010510391878619146))
+	await tree.sync()
 	print("Ready!")
 
 with open('token.txt') as f:
