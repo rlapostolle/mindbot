@@ -12,6 +12,10 @@ tree = app_commands.CommandTree(client)
 async def card(interaction: discord.Interaction, card: str):
 	name=card.replace(' ', '_')
 	await interaction.response.send_message(f'https://mindbug.fandom.com/wiki/{name}')
+	
+@tree.command(name = "randomcard", description = "Display a random card", guild=discord.Object(id= 1010510391878619146))
+async def randomcard(interaction: discord.Interaction):
+	await interaction.response.send_message(f'https://mindbug.fandom.com/wiki/Shark_Dog')
 
 @client.event
 async def on_ready():
