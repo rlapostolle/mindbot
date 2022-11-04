@@ -21,7 +21,7 @@ async def card(interaction: discord.Interaction, card: str):
 	
 @tree.command(name = "randomcard", description = "Display a random card")
 async def randomcard(interaction: discord.Interaction):
-	name = random.choice(cardlib.AllCards)
+	card = random.choice(cardlib.AllCards)
 	name = card.replace(' ', '_')
 	await interaction.response.send_message(f'https://mindbug.fandom.com/wiki/{name}')
 
