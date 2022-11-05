@@ -56,6 +56,10 @@ Promos=[
    "Ram Hopper",
    "Boar-zooka",
    "Sluggernaut",
+   "Chuck",
+   "Jazz Dog",
+   "Macaw Dagon",
+   "Unigon",
 ]
 
 AllCards = FirstContact + NewCreatures + Promos
