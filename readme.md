@@ -21,4 +21,4 @@ You now have a docker image of mindbot named `mindbot`.
 ## Docker
 
 You need a file named `token.txt` containing the app key (this is secret, do not share it).
-Then you can run `docker run -d -v /path/to/token.txt:/mindbot/token.txt:ro mindbot`.
+Then you can run `docker run -d --mount "type=bind,src=/path/to/token.txt,target=/mindbot/token.txt,readonly" mindbot`
