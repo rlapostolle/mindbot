@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  mindbot: 
+    container_name: mindbot
+    image: mindbot:latest
+    build:
+      context: .
+    volumes:
+      - type: bind
+        source: ./token.txt
+        target: /mindbot/token.txt
+    environment:
+      DB_HOST: mongodb
+      DB_PORT: 27017
+    depends_on: 
+      - carddatabase
+
+
+  carddatabase:
+    image : mongo
+    container_name: mongodb
+    volumes:
+      - ./mongodb:/data/db
+    ports:
+      - "27017:27017"
+    restart: unless-stopped

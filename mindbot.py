@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 
-import discord
 import cardlib
 import random
+import os
+import discord
 from discord import app_commands
+from pymongo import MongoClient
+
+mongodb = MongoClient(host = os.getenv('DB_HOST'), port = int(os.getenv('DB_PORT')))
 
 intents = discord.Intents.default()
 intents.message_content = True
