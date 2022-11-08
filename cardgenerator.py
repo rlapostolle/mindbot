@@ -146,11 +146,11 @@ def CreateAMindbugCard(artwork_filename: str, image_width: int, image_height: in
     )
 
     # Empty Card
-    newCardBackground = Image.new("RGBA",(816,1110), (0,0,0,0))
+    newCardBackground = Image.new("RGBA", (816,1110), (0,0,0,0))
     
     # CREATURE
     # print(artwork_as_bytes.read())
-    creature_image = Image.open(os.path.join(__location__, f"input/{artwork_filename}"))
+    creature_image = Image.open(os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"{artwork_filename}"))
     creature_image = creature_image.resize((744, 1038),resample= Image.Resampling.LANCZOS)
     creature_image = creature_image.convert("RGBA")
     # # Calculate width to be at the center
@@ -182,11 +182,12 @@ def CreateAMindbugCard(artwork_filename: str, image_width: int, image_height: in
     #region CARDNUMBER AND SET LOGO
     # The Logo must be an black Icon with transparent Background and name like the Cardset Name with prefix: cardset_<CardsetName>.png
     
-    # If a Set-Logo exists, then load it    
-    set_logo_exist = os.path.exists(os.path.join(__location__, f"input/cardset_{myCard.cardset}.png"))
+    # If a Set-Logo exists, then load it
+    logo_path = os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"cardset_{myCard.cardset}.png")
+    set_logo_exist = os.path.exists(logo_path)
 
     if (set_logo_exist):
-        set_logo = Image.open(os.path.join(__location__, f"input/cardset_{myCard.cardset}.png"))
+        set_logo = Image.open(logo_path)
         # Resize Set Logo
         set_logo = set_logo.resize((24, 24),resample= Image.Resampling.LANCZOS)
         set_logo = set_logo.convert("RGBA")
@@ -223,8 +224,9 @@ def CreateAMindbugCard(artwork_filename: str, image_width: int, image_height: in
             newCardBackground.paste(set_logo, (int(x_pos - 15),int(y_pos - 12 )), set_logo)
 
     # Save the final card
-    Path(__location__ + f"/output/{myCard.cardset}/{myCard.lang}/").mkdir(parents=True, exist_ok=True)
-    newCardBackground.save(__location__ + f"/output/{myCard.cardset}/{myCard.lang}/{myCard.filename}_{myCard.lang}.png",format="png", dpi = (300,300))
+    card_folder = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), f"{myCard.cardset}", f"{myCard.lang}")
+    Path(card_folder).mkdir(parents=True, exist_ok=True)
+    newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}_{myCard.lang}.png"), format="png", dpi = (300,300))
     
     # TODO: Create a function for conversation
     # image_file_for_conversation = BytesIO()
@@ -259,9 +261,9 @@ def CreateAMindbugCard(artwork_filename: str, image_width: int, image_height: in
     
     newCardBackground.close()
 
-    tmp_path = __location__ + "/output/{}/{}/cropped/{}_{}_cropped.png".format(myCard.cardset,myCard.lang, myCard.filename,myCard.lang)
-    Path(__location__ + "/output/{}/{}/cropped/".format(myCard.cardset,myCard.lang)).mkdir(parents=True, exist_ok=True)
-    final_card_without_sage_area.save(tmp_path,format="png", dpi = (300,300))
+    tmp_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), "{}/{}/cropped/{}_{}_cropped.png".format(myCard.cardset,myCard.lang, myCard.filename,myCard.lang))
+    Path(os.getenv('CARD_OUTPUT_FOLDER') + "/{}/{}/cropped/".format(myCard.cardset,myCard.lang)).mkdir(parents=True, exist_ok=True)
+    final_card_without_sage_area.save(tmp_path, format="png", dpi = (300,300))
     final_card_without_sage_area.close()
 
     # Read the tmp Image with cv2 form Transformint black to transparent
@@ -339,7 +341,7 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
     
     # CREATURE
     # print(artwork_as_bytes.read())
-    creature_image = Image.open(os.path.join(__location__, f"input/{artwork_filename}"))
+    creature_image = Image.open(os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"{artwork_filename}"))
     creature_image = creature_image.resize((744, 1038),resample= Image.Resampling.LANCZOS)
     creature_image = creature_image.convert("RGBA")
     # # Calculate width to be at the center
@@ -458,10 +460,11 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
     # The Logo must be an black Icon with transparent Background and name like the Cardset Name with prefix: cardset_<CardsetName>.png
     
     # If a Set-Logo exists, then load it    
-    set_logo_exist = os.path.exists(os.path.join(__location__, f"input/cardset_{myCard.cardset}.png"))
+    logo_path = os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"cardset_{myCard.cardset}.png")
+    set_logo_exist = os.path.exists(logo_path)
 
     if (set_logo_exist):
-        set_logo = Image.open(os.path.join(__location__, f"input/cardset_{myCard.cardset}.png"))
+        set_logo = Image.open(logo_path)
         # Resize Set Logo
         set_logo = set_logo.resize((24, 24),resample= Image.Resampling.LANCZOS)
         set_logo = set_logo.convert("RGBA")
@@ -498,8 +501,9 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
             newCardBackground.paste(set_logo, (int(x_pos - 15),int(y_pos - 12 )), set_logo)
 
     # Save the final card
-    Path(__location__ + f"/output/{myCard.cardset}/{myCard.lang}/").mkdir(parents=True, exist_ok=True)
-    newCardBackground.save(__location__ + f"/output/{myCard.cardset}/{myCard.lang}/{myCard.filename}_{myCard.lang}.png",format="png", dpi = (300,300))
+    card_folder = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), f"{myCard.cardset}", f"{myCard.lang}")
+    Path(card_folder).mkdir(parents=True, exist_ok=True)
+    newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}_{myCard.lang}.png"),format="png", dpi = (300,300))
     
     # TODO: Create a function for conversation
     # image_file_for_conversation = BytesIO()
@@ -534,9 +538,10 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
     
     newCardBackground.close()
 
-    tmp_path = __location__ + "/output/{}/{}/cropped/{}_{}_cropped.png".format(myCard.cardset,myCard.lang, myCard.filename,myCard.lang)
-    Path(__location__ + "/output/{}/{}/cropped/".format(myCard.cardset,myCard.lang)).mkdir(parents=True, exist_ok=True)
-    final_card_without_sage_area.save(tmp_path,format="png", dpi = (300,300))
+
+    tmp_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), "{}/{}/cropped/{}_{}_cropped.png".format(myCard.cardset,myCard.lang, myCard.filename,myCard.lang))
+    Path(os.getenv('CARD_OUTPUT_FOLDER') + "/{}/{}/cropped/".format(myCard.cardset,myCard.lang)).mkdir(parents=True, exist_ok=True)
+    final_card_without_sage_area.save(tmp_path, format="png", dpi = (300,300))
     final_card_without_sage_area.close()
 
     # Read the tmp Image with cv2 form Transformint black to transparent

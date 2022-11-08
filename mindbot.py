@@ -41,7 +41,7 @@ async def createmindbugcard(interaction: discord.InteractionMessage, artwork : d
 		# Save the Upload-Image
 		# TODO Accept only PNGs
 		# TODO Maybe use Buffers
-		await artwork.save(os.path.join(os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))),f"input/{artwork.filename}" ))
+		await artwork.save(os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"{artwork.filename}"))
 
 		# Create the Mindbug-Card
 		with BytesIO() as image_binary:
@@ -61,8 +61,20 @@ async def createcreaturecard(interaction: discord.InteractionMessage, artwork : 
 		# Save the Upload-Image
 		# TODO Accept only PNGs
 		# TODO Maybe use Buffers
-		await artwork.save(os.path.join(os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))),f"input/{artwork.filename}" ))
+		await artwork.save(os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"{artwork.filename}"))
 
+		db = mongodb["cardcreator"]
+		db["customcreatures"].insert_one({
+			'cardset': cardset,
+			'uid_from_set': uid_from_set,
+			'lang': lang,
+			'name': name,
+			'power': power, 
+			'keywords': keywords,
+			'effect': effect, 
+			'quote': quote,
+			'artwork': artwork.filename,
+			})
 		# Create the Mindbug-Card
 		with BytesIO() as image_binary:
 			cardgenerator.CreateACreatureCard(artwork_filename=artwork.filename,
@@ -88,12 +100,14 @@ async def createcreaturecard(interaction: discord.InteractionMessage, artwork : 
 @client.event
 async def on_ready():
 
+	print("Loading assets...")
 	# Load the Cardframes from the assets-Folder
 	cardgenerator.card_frame_normal, cardgenerator.card_frame_mindbug = cardgenerator.LoadingCardFrames()
 
 	# Load the Fonts from the assets-Folder
 	cardgenerator.name_font_52, cardgenerator.name_font_20, cardgenerator.trigger_and_capabilites_font, cardgenerator.description_font, cardgenerator.quote_font, cardgenerator.card_key_font_18, cardgenerator.power_font = cardgenerator.LoadingFonts()
 
+	print("Sync commands on all discord server...")
 	#Sync the commands with all server
 	await tree.sync()
 	print("Ready!")
