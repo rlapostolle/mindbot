@@ -10,9 +10,17 @@ services:
       - type: bind
         source: ./token.txt
         target: /mindbot/token.txt
+      - type: bind
+        source: ./uploaded_assets/
+        target: /data/uploaded_assets/
+      - type: bind
+        source: ./card_outputs/
+        target: /data/card_outputs/
     environment:
       DB_HOST: mongodb
       DB_PORT: 27017
+      ASSETS_UPLOAD_FOLDER: /data/uploaded_assets
+      CARD_OUTPUT_FOLDER: /data/card_outputs
     depends_on: 
       - carddatabase
 
