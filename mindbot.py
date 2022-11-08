@@ -6,6 +6,7 @@ import random
 import os
 import discord
 import cardgenerator
+from io import BytesIO
 from discord import app_commands
 from pymongo import MongoClient
 

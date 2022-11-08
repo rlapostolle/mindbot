@@ -136,6 +136,10 @@ def CreateAMindbugCard(artwork_filename: str, image_width: int, image_height: in
         uid_from_set=uid_from_set,
         lang=lang,
         name="MINDUBUG",
+        power = "",
+        keywords = "",
+        effect = "",
+        quote = "",
         image_path=artwork_filename,
         filename=pathname.split('/')[-1],
         cardset=cardset
