@@ -13,12 +13,12 @@ Current supported commands:
 
 Docker is the prefered way of installing Mindbot.
 
-Go to your mindbot directory, then run `docker build -t mindbot .`.
-You now have a docker image of mindbot named `mindbot`.
+Go to your mindbot directory, then run `docker compose build`.
+You now have a docker image of mindbot named `mindbot` and a mangodb image.
 
 # Run
 
 ## Docker
 
 You need a file named `token.txt` containing the app key (this is secret, do not share it).
-Then you can run `docker run -d --mount "type=bind,src=/path/to/token.txt,target=/mindbot/token.txt,readonly" mindbot`
+Then you can run `docker compose up`.
