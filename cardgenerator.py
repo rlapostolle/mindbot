@@ -1,5 +1,5 @@
-import os, requests, cv2
-from io import BytesIO, BufferedIOBase, StringIO
+import os, cv2, base64
+from io import BytesIO
 from PIL import Image, ImageFont, ImageDraw, ImageFilter, ImageOps
 from pathlib import Path
 from models import Card
@@ -149,11 +149,25 @@ def CreateAMindbugCard(artwork_filename: str, image_width: int, image_height: in
     newCardBackground = Image.new("RGBA", (816,1110), (0,0,0,0))
     
     # CREATURE
-    # print(artwork_as_bytes.read())
     creature_image = Image.open(os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"{artwork_filename}"))
     creature_image = creature_image.resize((744, 1038),resample= Image.Resampling.LANCZOS)
     creature_image = creature_image.convert("RGBA")
-    # # Calculate width to be at the center
+
+    # Create a Blurred Background so that we have a safe cutting area.
+    creature_image_blurred = creature_image.resize((816, 1110),resample= Image.Resampling.LANCZOS)
+    creature_image_blurred = creature_image_blurred.convert("RGBA")
+    creature_image_blurred = creature_image_blurred.filter(ImageFilter.BoxBlur(48))
+    
+    # Calculate width to be at the center
+    x_pos = (newCardBackground.width - creature_image_blurred.width) // 2
+    
+    # Calculate height to be at the center
+    y_pos = (newCardBackground.height - creature_image_blurred.height) // 2
+    
+    # Paste the Blurred Background at center
+    newCardBackground.paste(creature_image_blurred, (x_pos, y_pos), creature_image_blurred)
+
+    # Calculate width to be at the center
     x_pos = (newCardBackground.width - creature_image.width) // 2
 
     # Calculate height to be at the center
@@ -191,6 +205,13 @@ def CreateAMindbugCard(artwork_filename: str, image_width: int, image_height: in
         # Resize Set Logo
         set_logo = set_logo.resize((24, 24),resample= Image.Resampling.LANCZOS)
         set_logo = set_logo.convert("RGBA")
+        
+        # Save Set Icon as Base64 String
+        with BytesIO() as image_binary:
+            set_logo.save(image_binary,format="png", dpi = (300,300))
+            image_binary.seek(0)
+            image_as_base64 =  base64.b64encode(image_binary.getvalue()).decode()
+            myCard.set_icon_base64 = image_as_base64
 
 
     # Calculate the Position for the Logo
@@ -224,16 +245,17 @@ def CreateAMindbugCard(artwork_filename: str, image_width: int, image_height: in
             newCardBackground.paste(set_logo, (int(x_pos - 15),int(y_pos - 12 )), set_logo)
 
     # Save the final card
+    myCard.final_card_name = f"{myCard.filename}_{myCard.lang}.png"
     card_folder = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), f"{myCard.cardset}", f"{myCard.lang}")
     Path(card_folder).mkdir(parents=True, exist_ok=True)
     newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}_{myCard.lang}.png"), format="png", dpi = (300,300))
     
-    # TODO: Create a function for conversation
-    # image_file_for_conversation = BytesIO()
-    # newCardBackground.save(image_file_for_conversation,format="png", dpi = (300,300))
-    # image_file_for_conversation.seek(0)
-    # image_as_base64 =  base64.b64encode(image_file_for_conversation.getvalue()).decode()
-    # myCard.final_card_base_64 = image_as_base64
+    # Save final Card as Base64 String
+    with BytesIO() as image_binary:
+        newCardBackground.save(image_binary,format="png", dpi = (300,300))
+        image_binary.seek(0)
+        image_as_base64 =  base64.b64encode(image_binary.getvalue()).decode()
+        myCard.cropped_final_card_base64 = image_as_base64
 
     #endregion
 
@@ -261,6 +283,7 @@ def CreateAMindbugCard(artwork_filename: str, image_width: int, image_height: in
     
     newCardBackground.close()
 
+    myCard.final_cropped_card_name = f"{myCard.filename}_{myCard.lang}_cropped.png"
     tmp_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), "{}/{}/cropped/{}_{}_cropped.png".format(myCard.cardset,myCard.lang, myCard.filename,myCard.lang))
     Path(os.getenv('CARD_OUTPUT_FOLDER') + "/{}/{}/cropped/".format(myCard.cardset,myCard.lang)).mkdir(parents=True, exist_ok=True)
     final_card_without_sage_area.save(tmp_path, format="png", dpi = (300,300))
@@ -306,23 +329,32 @@ def CreateAMindbugCard(artwork_filename: str, image_width: int, image_height: in
     card_backup_background.paste(clean_card, (x_pos, y_pos), clean_card)
     card_backup_background.save(tmp_path,format="png", dpi = (300,300))
 
-    # # Create a Base64 String from the cropped final Card
-    # image_file_for_conversation = BytesIO()
-    # card_backup_background.save(image_file_for_conversation,format="png", dpi = (300,300))
-    # image_file_for_conversation.seek(0)
-    # image_as_base64 =  base64.b64encode(image_file_for_conversation.getvalue()).decode()
-    
-    # myCard.cropped_final_card_base64 = image_as_base64
+    # Save cropped final Card as Base64 String
+    with BytesIO() as image_binary:
+        card_backup_background.save(image_binary,format="png", dpi = (300,300))
+        image_binary.seek(0)
+        image_as_base64 =  base64.b64encode(image_binary.getvalue()).decode()
+        myCard.cropped_final_card_base64 = image_as_base64
 
     clean_card.close()
 
-    return card_backup_background
+    return card_backup_background, myCard
 
-
-def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: int, lang: str, cardset: str, uid_from_set: str, name: str, power: str, keywords:str, effect:str, quote:str):
-    print("Cooking a Creature")
-    
+# This Function Create a Card from a given File
+# TODO: Create a Edit Function wich use a Base64 String
+def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: int, lang: str, cardset: str, uid_from_set: str, name: str, power: str, keywords:str = None, effect:str = None, quote:str= None):
+   
     pathname, extension = os.path.splitext(artwork_filename)	
+
+    if (keywords is None):
+        keywords = ""
+
+    if (effect is None):
+        effect = ""
+
+    if (quote is None):
+        quote = ""
+
     myCard = Card(
         uid_from_set=uid_from_set,
         lang=lang,
@@ -336,23 +368,49 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
         cardset=cardset
     )
 
+    print(f"Cooking Creature {myCard.name}")
+    
     # Empty Card
     newCardBackground = Image.new("RGBA",(816,1110), (0,0,0,0))
     
-    # CREATURE
-    # print(artwork_as_bytes.read())
+    # CREATURE AND BLURRED BACKGROUND
     creature_image = Image.open(os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"{artwork_filename}"))
     creature_image = creature_image.resize((744, 1038),resample= Image.Resampling.LANCZOS)
     creature_image = creature_image.convert("RGBA")
-    # # Calculate width to be at the center
-    x_pos = (newCardBackground.width - creature_image.width) // 2
 
+    # Save Artwork as Base64 String
+    with BytesIO() as image_binary:
+        creature_image.save(image_binary,format="png", dpi = (300,300))
+        image_binary.seek(0)
+        image_as_base64 =  base64.b64encode(image_binary.getvalue()).decode()
+        myCard.artwork_base64 = image_as_base64
+
+    # Create a Blurred Background so that we have a safe cutting area.
+    creature_image_blurred = creature_image.resize((816, 1110),resample= Image.Resampling.LANCZOS)
+    creature_image_blurred = creature_image_blurred.convert("RGBA")
+    creature_image_blurred = creature_image_blurred.filter(ImageFilter.BoxBlur(48))
+    
+    # Calculate width to be at the center
+    x_pos = (newCardBackground.width - creature_image_blurred.width) // 2
+    
+    # Calculate height to be at the center
+    y_pos = (newCardBackground.height - creature_image_blurred.height) // 2
+    
+    # Paste the Blurred Background at center
+    newCardBackground.paste(creature_image_blurred, (x_pos, y_pos), creature_image_blurred)
+    
+        # Calculate width to be at the center
+    x_pos = (newCardBackground.width - creature_image.width) // 2
+    
     # Calculate height to be at the center
     y_pos = (newCardBackground.height - creature_image.height) // 2
-    
-    # Paste the CardFrame at center
+    # Paste the Artwork at center
     newCardBackground.paste(creature_image, (x_pos, y_pos), creature_image)
 
+    # For the Future, requires "from rembg import remove"
+    # creature_image_clean = None
+    # if(myCard.use_3d_effect != ""):
+    #     creature_image_clean = remove(creature_image.copy()) # With this copy, we can build a depth-effect  
 
     # FRAME
     # Calculate width to be at the center
@@ -372,6 +430,37 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
 
     # Power
     card_editable.text((145,125), myCard.power, fill="white", font=power_font,anchor="mm" )
+
+    #region TEST FOR 3D DEPTH-EFFECT, HIDDEN PARTS OF THE NAME FIELD WITH CREATURE BY GIVEN BOOL
+    # For the Future, when we can Edit a card
+    # if(myCard.use_3d_effect != ""):
+    #     # 1. CROP THE MONSTER 1/4 or 1/2
+    #     if(myCard.use_3d_effect == "1"):    
+    #         left = 0
+    #         top = 0
+    #         right = creature_image_clean.size[0]
+    #         bottom = creature_image_clean.size[1]//2
+    #         creature_image_clean = creature_image_clean.crop((left, top, right, bottom)).resize((744, 1038//2),resample= Image.Resampling.BICUBIC)
+
+    #         # 2. PASTE THE new IMAGE
+    #         x = (816-744)//2 #newCardBackground.size[0]//2 
+    #         y = y_pos + (1110-1038)//2
+
+    #     elif (myCard.use_3d_effect == "2"):    
+    #         left = creature_image_clean.size[0]//2
+    #         top = 0
+    #         right = creature_image_clean.size[0]
+    #         bottom = creature_image_clean.size[1]//2
+    #         creature_image_clean = creature_image_clean.crop((left, top, right, bottom)).resize((744//2, 1038//2),resample= Image.Resampling.BICUBIC)
+
+    #         # 2. PASTE THE new IMAGE
+    #         x = newCardBackground.size[0]//2 
+    #         y = y_pos + (1110-1038)//2
+        
+    #     if( not playtestMode):
+    #         newCardBackground.paste(creature_image_clean,(x,y), creature_image_clean)
+    # #endregion
+
 
     # Calculate max Width from Textarea
     max_text_area_width_on_card = card_frame_normal.width - 220
@@ -394,7 +483,7 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
         position_of_text_end_in_y += 50
     else:
         # Offset between Textboxborder and Descripton
-        position_of_text_end_in_y += 35
+        position_of_text_end_in_y += 40
 
     # Split the description to # to detect the triggers
     triggers = cleanup_triggers(myCard.effect.split("#"))
@@ -403,7 +492,7 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
     for triggersentence in triggers:
 
         if more_than_one_trigger:
-            position_of_text_end_in_y += 35
+            position_of_text_end_in_y += 40
 
         descriptionlines = text_wrap(triggersentence,description_font, max_text_area_width_on_card)
         # IDEA:
@@ -414,7 +503,7 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
         for line in descriptionlines:
             # Calculate the new Text position
             if (i != 0):
-                position_of_text_end_in_y += 35
+                position_of_text_end_in_y += 40
 
             trigger_word = line.split(" ")[0]
 
@@ -438,7 +527,7 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
     #endregion
 
     #region QUOATES
-    if (capabilities[0] != "" and triggers[0] != ""):
+    if (myCard.keywords != "" and myCard.effect != ""):
         position_of_text_end_in_y += 50
     else:
         position_of_text_end_in_y += 45
@@ -449,7 +538,7 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
     for line in quotes:
         # Calculate the new Text position
         if (i != 0):
-            position_of_text_end_in_y += 35
+            position_of_text_end_in_y += 40
 
         card_editable.text((newCardBackground.width/2,position_of_text_end_in_y), line, fille="white", font=quote_font,anchor="mm" )
         i += 1
@@ -468,6 +557,13 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
         # Resize Set Logo
         set_logo = set_logo.resize((24, 24),resample= Image.Resampling.LANCZOS)
         set_logo = set_logo.convert("RGBA")
+        
+        # Save Set Icon as Base64 String
+        with BytesIO() as image_binary:
+            set_logo.save(image_binary,format="png", dpi = (300,300))
+            image_binary.seek(0)
+            image_as_base64 =  base64.b64encode(image_binary.getvalue()).decode()
+            myCard.set_icon_base64 = image_as_base64
 
 
     # Calculate the Position for the Logo
@@ -501,17 +597,17 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
             newCardBackground.paste(set_logo, (int(x_pos - 15),int(y_pos - 12 )), set_logo)
 
     # Save the final card
+    myCard.final_card_name = f"{myCard.filename}_{myCard.lang}.png"
     card_folder = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), f"{myCard.cardset}", f"{myCard.lang}")
     Path(card_folder).mkdir(parents=True, exist_ok=True)
     newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}_{myCard.lang}.png"),format="png", dpi = (300,300))
     
-    # TODO: Create a function for conversation
-    # image_file_for_conversation = BytesIO()
-    # newCardBackground.save(image_file_for_conversation,format="png", dpi = (300,300))
-    # image_file_for_conversation.seek(0)
-    # image_as_base64 =  base64.b64encode(image_file_for_conversation.getvalue()).decode()
-    # myCard.final_card_base_64 = image_as_base64
-
+    # Save final Card as Base64 String
+    with BytesIO() as image_binary:
+        newCardBackground.save(image_binary,format="png", dpi = (300,300))
+        image_binary.seek(0)
+        image_as_base64 =  base64.b64encode(image_binary.getvalue()).decode()
+        myCard.final_card_base_64 = image_as_base64
     #endregion
 
     #region SAVE CROPPED CARD
@@ -539,6 +635,7 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
     newCardBackground.close()
 
 
+    myCard.final_cropped_card_name = f"{myCard.filename}_{myCard.lang}_cropped.png"
     tmp_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), "{}/{}/cropped/{}_{}_cropped.png".format(myCard.cardset,myCard.lang, myCard.filename,myCard.lang))
     Path(os.getenv('CARD_OUTPUT_FOLDER') + "/{}/{}/cropped/".format(myCard.cardset,myCard.lang)).mkdir(parents=True, exist_ok=True)
     final_card_without_sage_area.save(tmp_path, format="png", dpi = (300,300))
@@ -584,14 +681,13 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
     card_backup_background.paste(clean_card, (x_pos, y_pos), clean_card)
     card_backup_background.save(tmp_path,format="png", dpi = (300,300))
 
-    # # Create a Base64 String from the cropped final Card
-    # image_file_for_conversation = BytesIO()
-    # card_backup_background.save(image_file_for_conversation,format="png", dpi = (300,300))
-    # image_file_for_conversation.seek(0)
-    # image_as_base64 =  base64.b64encode(image_file_for_conversation.getvalue()).decode()
-    
-    # myCard.cropped_final_card_base64 = image_as_base64
+    # Save cropped final Card as Base64 String
+    with BytesIO() as image_binary:
+        card_backup_background.save(image_binary,format="png", dpi = (300,300))
+        image_binary.seek(0)
+        image_as_base64 =  base64.b64encode(image_binary.getvalue()).decode()
+        myCard.final_card_base_64 = image_as_base64
 
     clean_card.close()
 
-    return card_backup_background
+    return card_backup_background, myCard

@@ -12,6 +12,8 @@ class Card():
         self.filename = filename # from image_path
         self.cardset = cardset #8
         self.cropped_final_card_base64 = ""
+        self.final_cropped_card_name = ""
         self.final_card_base_64 = ""
+        self.final_card_name = ""
         self.artwork_base64 = ""
         self.set_icon_base64 = ""
