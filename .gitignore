@@ -1,6 +1,6 @@
 #Custom
-input/
-output/
+card_outputs/
+uploaded_assets/
 mongodb/
 
 # Byte-compiled / optimized / DLL files
