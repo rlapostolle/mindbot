@@ -5,12 +5,13 @@ import uuid
 import cardlib
 import random
 import os
+import datetime
 import discord
 import cardgenerator
 from models import Card
 from io import BytesIO
-from discord import app_commands
-from pymongo import MongoClient
+from discord import app_commands, ui
+from pymongo import MongoClient, ASCENDING
 
 #region DB STUFF
 mongodb = MongoClient(host = os.getenv('DB_HOST'), port = int(os.getenv('DB_PORT')))
@@ -40,7 +41,203 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
-image_whiteList = ['png', 'PNG']
+image_whiteList = ['png', 'PNG', 'jpg', 'JPG']
+
+class EditMenu(discord.ui.View):
+	def __init__(self):
+		super().__init__(timeout=None)
+
+	@discord.ui.button(custom_id = "NameButton",label="Name" ,emoji="✏️", style=discord.ButtonStyle.gray, row=0)
+	async def editCardName(self, interaction: discord.Interaction, button: discord.ui.Button):
+		await interaction.response.send_modal(EditCardName())
+			
+	@discord.ui.button(custom_id = "PowerButton",label="Power",emoji="✏️", style=discord.ButtonStyle.gray, row=0)
+	async def editCardPower(self, interaction: discord.Interaction, button: discord.ui.Button):
+		await interaction.response.send_modal(EditCardPower())
+
+	@discord.ui.button(custom_id = "CapabilitesButton",label="Capabilites",emoji="✏️", style=discord.ButtonStyle.gray, row=0)
+	async def editCardCapabilites(self, interaction: discord.Interaction, button: discord.ui.Button):
+		await interaction.response.send_modal(EditCardCapabilites()())
+
+	@discord.ui.button(custom_id = "EffectButton",label="Effect",emoji="✏️", style=discord.ButtonStyle.gray, row=0)
+	async def editCardEffect(self, interaction: discord.Interaction, button: discord.ui.Button):
+		await interaction.response.send_modal(EditCardEffect())
+
+	@discord.ui.button(custom_id = "QuoteButton",label="Quote",emoji="✏️", style=discord.ButtonStyle.gray, row=0)
+	async def editCardQuote(self, interaction: discord.Interaction, button: discord.ui.Button):
+		await interaction.response.send_modal(EditCardQuote())
+
+	@discord.ui.button(custom_id = "cardNumberButton",label="Card Nr",emoji="✏️", style=discord.ButtonStyle.gray, row=1)
+	async def editCardNumber(self, interaction: discord.Interaction, button: discord.ui.Button):
+		await interaction.response.send_modal(EditCardNumber())
+
+	@discord.ui.button(custom_id = "SetNameButton",label="Setname",emoji="✏️", style=discord.ButtonStyle.gray,row=1)
+	async def editCardSet(self, interaction: discord.Interaction, button: discord.ui.Button):
+		await interaction.response.send_modal(EditCardSet()())
+
+	@discord.ui.button(custom_id = "LangugageButton",label="Lang",emoji="✏️", style=discord.ButtonStyle.gray,row=1)
+	async def editCardLanguage(self, interaction: discord.Interaction, button: discord.ui.Button):
+		await interaction.response.send_modal(EditCardLanguage())
+
+	@discord.ui.button(custom_id = "PreviewButton",label="Preview",emoji="🖼️", style=discord.ButtonStyle.red,row=2)
+	async def previewCard(self, interaction: discord.Interaction, button: discord.ui.Button):
+		embedFields = interaction.message.embeds[0].to_dict()
+		NameField = 0
+		PowerField = 1
+		CapabilitiesField = 2
+		EffectField = 3
+		QuoteField = 4
+		CardnumberField = 5
+		SetnameField = 6
+		LanguageField = 7
+		FilenameField = 8
+
+		nameFieldAsDict = embedFields["fields"][NameField]
+		powerFiledAsDict = embedFields["fields"][PowerField]
+		CapabilitiesFieldAsDict = embedFields["fields"][CapabilitiesField]
+		EffectFieldAsDict = embedFields["fields"][EffectField]
+		QuoteFieldAsDict = embedFields["fields"][QuoteField]
+		CardnumberFielddAsDict = embedFields["fields"][CardnumberField]
+		SetnameFieldAsDict = embedFields["fields"][SetnameField]
+		LanguageFieldAsDict = embedFields["fields"][LanguageField]
+		filenameFiledAsDict = embedFields["fields"][FilenameField]
+		
+		await interaction.response.defer(ephemeral=True, thinking=True)
+		# Update the Mindbug-Card
+		with BytesIO() as image_binary:
+			filename = filenameFiledAsDict["value"]
+			name = nameFieldAsDict["value"]
+			power = powerFiledAsDict["value"]
+			capabilities = CapabilitiesFieldAsDict["value"]
+			effect = EffectFieldAsDict["value"]
+			quote = QuoteFieldAsDict["value"]
+			cardnumber = CardnumberFielddAsDict["value"]
+			setname = SetnameFieldAsDict["value"]
+			language = LanguageFieldAsDict["value"]
+			filename = filenameFiledAsDict["value"]
+
+			finalCardAsImage, finalCardObj = cardgenerator.CreateACreatureCard(artwork_filename=filename,
+												uid_from_set=cardnumber,
+												lang=language,
+												name=name,
+												power = power,
+												keywords = capabilities if (capabilities  != "?" ) else "",
+												effect = effect if (effect  != "?" ) else "",
+												quote = quote if (quote  != "?" ) else "",
+												cardset=setname
+												)
+			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300))
+			image_binary.seek(0)
+
+			myEmbed = discord.Embed(color = discord.Color.random())
+			myEmbed.set_image(url=f"attachment://{filename}")
+			myEmbed.add_field(name="Name", value=name, inline=True) # Index 0
+			myEmbed.add_field(name="Power", value=power, inline=False) # Index 1
+			myEmbed.add_field(name="Capabilities", value=capabilities, inline=False) # Index 2
+			myEmbed.add_field(name="Effect", value=effect, inline=False) # Index 3
+			myEmbed.add_field(name="Quote", value=quote, inline=False) # Index 4
+			myEmbed.add_field(name="Cardnumber in Set", value=cardnumber, inline=False) # Index 5
+			myEmbed.add_field(name="Setname", value=setname, inline=False) # Index 6
+			myEmbed.add_field(name="Language", value=language, inline=False) # Index 7
+			myEmbed.add_field(name="Filename", value=f"{filename}", inline=True) # Index 8
+		
+			await interaction.followup.send(embed = myEmbed, view = EditMenu(), file=discord.File(fp=image_binary, filename=filename), ephemeral=True)
+
+	@discord.ui.button(custom_id = "ReleaseButton",label="", emoji="✔️",style=discord.ButtonStyle.green ,row=2)
+	async def releaseCard(self, interaction: discord.Interaction, button: discord.ui.Button):
+		embedFields = interaction.message.embeds[0].to_dict()
+		NameField = 0
+		PowerField = 1
+		CapabilitiesField = 2
+		EffectField = 3
+		QuoteField = 4
+		CardnumberField = 5
+		SetnameField = 6
+		LanguageField = 7
+		FilenameField = 8
+
+		nameFieldAsDict = embedFields["fields"][NameField]
+		powerFiledAsDict = embedFields["fields"][PowerField]
+		CapabilitiesFieldAsDict = embedFields["fields"][CapabilitiesField]
+		EffectFieldAsDict = embedFields["fields"][EffectField]
+		QuoteFieldAsDict = embedFields["fields"][QuoteField]
+		CardnumberFielddAsDict = embedFields["fields"][CardnumberField]
+		SetnameFieldAsDict = embedFields["fields"][SetnameField]
+		LanguageFieldAsDict = embedFields["fields"][LanguageField]
+		filenameFiledAsDict = embedFields["fields"][FilenameField]
+		
+		await interaction.response.defer(ephemeral=False, thinking=True)
+		# Update the Mindbug-Card
+		with BytesIO() as image_binary:
+			filename = filenameFiledAsDict["value"]
+			name = nameFieldAsDict["value"]
+			power = powerFiledAsDict["value"]
+			capabilities = CapabilitiesFieldAsDict["value"]
+			effect = EffectFieldAsDict["value"]
+			quote = QuoteFieldAsDict["value"]
+			cardnumber = CardnumberFielddAsDict["value"]
+			setname = SetnameFieldAsDict["value"]
+			language = LanguageFieldAsDict["value"]
+			filename = filenameFiledAsDict["value"]
+	
+			finalCardAsImage, finalCardObj = cardgenerator.CreateACreatureCard(artwork_filename=filename,
+												uid_from_set=cardnumber,
+												lang=language,
+												name=name,
+												power = power,
+												keywords = capabilities if (capabilities  != "?" ) else "",
+												effect = effect if (effect  != "?" ) else "",
+												quote = quote if (quote  != "?" ) else "",
+												cardset=setname
+												)
+			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300))
+			image_binary.seek(0)
+			
+			saveCardinDB(interaction, finalCardObj)
+		
+			# await interaction.followup.send(embed = myEmbed, view = EditMenu(), file=discord.File(fp=image_binary, filename=filename), ephemeral=False)
+			await interaction.followup.send(content="Release #1", file=discord.File(fp=image_binary, filename=filename), ephemeral=False)
+
+
+
+# First only an embed, the we can edit the data, add a preview Button and a release button
+@tree.command(name = "upload", description = "Test")
+async def upload(interaction: discord.Interaction, artwork : discord.Attachment):
+	try:
+		if (artwork):
+			# The first answer must be given within 3sec.
+			await interaction.response.defer(ephemeral=True, thinking=True)
+			# From now on we have 15 minutes
+			
+			# Check if the Artwork is a PNG
+			if artwork.filename.split(".")[-1] not in image_whiteList:
+				await interaction.followup.send("The artwork is not a supported file.", ephemeral=True)
+				return
+
+			# Save the Upload-Artwork
+			await artwork.save(os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"{artwork.filename}"))
+						
+			# Create the Mindbug-Card
+			myEmbed = discord.Embed(color = discord.Color.random())
+			# myEmbed.set_image(url=f"attachment://{artwork.filename}")
+			myEmbed.add_field(name="Name", value="Sirus Snape", inline=False) # Index 0
+			myEmbed.add_field(name="Power", value="X", inline=False) # Index 1
+			myEmbed.add_field(name="Capabilities", value="?", inline=False) # Index 2
+			myEmbed.add_field(name="Effect", value="?", inline=False) # Index 3
+			myEmbed.add_field(name="Quote", value="?", inline=False) # Index 4
+			myEmbed.add_field(name="Cardnumber in Set", value="1/1", inline=False) # Index 5
+			myEmbed.add_field(name="Setname", value="Second Wave", inline=False) # Index 6
+			myEmbed.add_field(name="Language", value="en", inline=False) # Index 7
+			myEmbed.add_field(name="Filename", value=f"{artwork.filename}", inline=False) # Index 8
+		
+			await interaction.followup.send(embed = myEmbed, view = EditMenu(), ephemeral=True)
+		else:
+			await interaction.response.send_message(f'No File', ephemeral=True)
+	except Exception as e:
+		print("Error on Create Mindbug Card.")
+		print (str(e))
+		await interaction.followup.send(f"I choked and had to abort.", ephemeral=True)
+
 
 @tree.command(name = "card", description = "Display a card by name")
 async def card(interaction: discord.Interaction, card: str):
@@ -135,7 +332,7 @@ async def createmindbugcard(interaction: discord.InteractionMessage, artwork : d
 
 			# Create the Mindbug-Card
 			with BytesIO() as image_binary:
-				finalCardAsImage, finalCardObj = cardgenerator.CreateAMindbugCard(artwork_filename=artwork_filename,image_width= artwork.width,image_height= artwork.height, lang=lang, cardset=cardset, uid_from_set=uid_from_set )
+				finalCardAsImage, finalCardObj = cardgenerator.CreateAMindbugCard(artwork_filename=artwork.filename, lang=lang, cardset=cardset, uid_from_set=uid_from_set )
 				finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300))
 				image_binary.seek(0)
 				saveCardinDB(interaction, finalCardObj)
@@ -190,9 +387,7 @@ async def createcreaturecard(interaction: discord.InteractionMessage, artwork : 
 
 			# Create the Mindbug-Card
 			with BytesIO() as image_binary:
-				finalCardAsImage, finalCardObj = cardgenerator.CreateACreatureCard(artwork_filename=artwork_filename,
-													image_width=artwork.width,
-													image_height= artwork.height, 
+				finalCardAsImage, finalCardObj = cardgenerator.CreateACreatureCard(artwork_filename=artwork.filename,
 													lang=lang,
 													cardset=cardset, 
 													uid_from_set=uid_from_set, 
