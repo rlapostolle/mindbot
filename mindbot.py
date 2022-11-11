@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import re
+import uuid
 import cardlib
 import random
 import os
@@ -14,25 +16,12 @@ from pymongo import MongoClient
 mongodb = MongoClient(host = os.getenv('DB_HOST'), port = int(os.getenv('DB_PORT')))
 
 def saveCardinDB(myInteraction: discord.Interaction, myCardToSave: Card):
+	print(myCardToSave.filename)
 	db = mongodb["cardcreator"]
-	db["customcreatures"].insert_one({
-		'cardset': myCardToSave.cardset,
-		'uid_from_set': myCardToSave.uid_from_set,
-		'lang': myCardToSave.lang,
-		'name': myCardToSave.name,
-		'power': myCardToSave.power, 
-		'keywords': myCardToSave.keywords,
-		'effect': myCardToSave.effect, 
-		'quote': myCardToSave.quote,
-		'filename':myCardToSave.filename,
-		'artworkAsBase64': myCardToSave.artwork_base64,
-		'final_card_filename':myCardToSave.final_card_name,
-		'final_card_as_base64': myCardToSave.final_card_base_64,
-		'final_card_cropped_filename':myCardToSave.final_cropped_card_name,
-		'final_cropped_card_as_base64': myCardToSave.cropped_final_card_base64,
-		'user_id': myInteraction.user.id,
-		'user_name': myInteraction.user.name
-		})
+	obj = myCardToSave.toDdObj()
+	obj['user_id'] = myInteraction.user.id
+	obj['user_name'] = myInteraction.user.name
+	db["customcreatures"].insert_one(obj)
 #endregion
 
 intents = discord.Intents.default()
@@ -57,6 +46,39 @@ async def randomcard(interaction: discord.Interaction):
 	name = card.replace(' ', '_')
 	await interaction.response.send_message(f'https://mindbug.fandom.com/wiki/{name}')
 
+@tree.command(name = "randomcustom", description = "Display a random custom card created by the community")
+async def randomcustom(interaction: discord.Interaction, user:str = None):
+	try:
+		if user != None:
+			userid = int(re.search(r"<@!?(\d+)>", user).group(1))
+		else:
+			userid = None
+	except:
+		await interaction.response.send_message("Invalid user", ephemeral=True)
+		return
+	await interaction.response.defer(ephemeral=False, thinking=True)
+
+	#Get a random card
+	db = mongodb["cardcreator"]
+	card = list(db["customcreatures"].aggregate([
+		{"$match": { "$and" : [
+			{ "filename": { "$exists": True } },
+			{ "filename": { '$ne': None} },
+			] + ([{"user_id": userid }] if userid != None else [])
+		} },
+		{"$sample": { "size": 1}}]))
+
+	if(len(card) > 0 and 'filename' in card[0]):
+		c = Card(**card[0])
+		img_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), c.relativePath())
+		if(os.path.exists(img_path)):
+			await interaction.followup.send(file=discord.File(fp=img_path))
+		else:
+			print(f"Creature image unavailable: {img_path}")
+			await interaction.followup.send("Sorry, there was an error while reading card...")
+	else:
+		await interaction.followup.send("No record available.")
+
 @tree.command(name = "createamindbug", description = "Create a Mindbug Card with a given Artwork. The Artwork must be a PNG-File.")
 async def createmindbugcard(interaction: discord.InteractionMessage, artwork : discord.Attachment, lang: str, cardset: str, uid_from_set: str):
 	try:
@@ -66,12 +88,16 @@ async def createmindbugcard(interaction: discord.InteractionMessage, artwork : d
 			# From now on we have 15 minutes
 			
 			# Check if the Artwork is a PNG
-			if artwork.filename.split(".")[-1] not in image_whiteList:
+			ext = artwork.filename.split(".")[-1]
+			if ext not in image_whiteList:
 				await interaction.followup.send("The artwork is not a PNG file.")
 				return
 
+			#rename asset with random name to avoid collision
+			artwork_filename = uuid.uuid4().hex + "." + ext
+
 			# Save the Upload-Artwork
-			await artwork.save(os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"{artwork.filename}"))
+			await artwork.save(os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"{artwork_filename}"))
 
 			# Check if the Set Icon is a PNG
 			# TODO: See CreateCreatureCard
@@ -83,7 +109,7 @@ async def createmindbugcard(interaction: discord.InteractionMessage, artwork : d
 
 			# Create the Mindbug-Card
 			with BytesIO() as image_binary:
-				finalCardAsImage, finalCardObj = cardgenerator.CreateAMindbugCard(artwork_filename=artwork.filename,image_width= artwork.width,image_height= artwork.height, lang=lang, cardset=cardset, uid_from_set=uid_from_set )
+				finalCardAsImage, finalCardObj = cardgenerator.CreateAMindbugCard(artwork_filename=artwork_filename,image_width= artwork.width,image_height= artwork.height, lang=lang, cardset=cardset, uid_from_set=uid_from_set )
 				finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300))
 				image_binary.seek(0)
 				saveCardinDB(interaction, finalCardObj)
@@ -91,8 +117,11 @@ async def createmindbugcard(interaction: discord.InteractionMessage, artwork : d
 				await interaction.followup.send(file=discord.File(fp=image_binary, filename=f'image.png'))
 		else:
 			await interaction.response.send_message(f'No File')
-	except:
-		print("Error on Create Mindbug Card.")
+	except cardgenerator.CardNameAlreadyUsed as e:
+		print(e)
+		await interaction.followup.send(f"This card name already exists in this set, please chose a different one")
+	except Exception as e:
+		print("Error on Create Mindbug Card: " + str(e))
 		await interaction.followup.send(f"I choked and had to abort.")
 
 @tree.command(name = "createacreature", description = "Create a Creature Card with a given Artwork. The Artwork must be a PNG-File.")
@@ -104,12 +133,16 @@ async def createcreaturecard(interaction: discord.InteractionMessage, artwork : 
 			# From now on we have 15 minutes
 			# 			
 			# Check if the Image is a PNG
-			if artwork.filename.split(".")[-1] not in image_whiteList:
+			ext = artwork.filename.split(".")[-1]
+			if ext not in image_whiteList:
 				await interaction.followup.send("The artwork is not a PNG file.")
 				return
 
-			# Save the Upload-Artwor
-			await artwork.save(os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"{artwork.filename}"))
+			#rename asset with random name to avoid collision
+			artwork_filename = uuid.uuid4().hex + "." + ext
+
+			# Save the Uploaded Artwork
+			await artwork.save(os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"{artwork_filename}"))
 
 			# Check if the Set Icon is a PNG
 			# I think we need an other command to Upload a Set Icon, wich can use here.
@@ -121,7 +154,7 @@ async def createcreaturecard(interaction: discord.InteractionMessage, artwork : 
 
 			# Create the Mindbug-Card
 			with BytesIO() as image_binary:
-				finalCardAsImage, finalCardObj = cardgenerator.CreateACreatureCard(artwork_filename=artwork.filename,
+				finalCardAsImage, finalCardObj = cardgenerator.CreateACreatureCard(artwork_filename=artwork_filename,
 													image_width=artwork.width,
 													image_height= artwork.height, 
 													lang=lang,
@@ -140,8 +173,11 @@ async def createcreaturecard(interaction: discord.InteractionMessage, artwork : 
 				await interaction.followup.send(file=discord.File(fp=image_binary, filename=artwork.filename))
 		else:
 			await interaction.response.send_message(f'No File')
-	except:
-		print("Error on Create Crature Card.")
+	except cardgenerator.CardNameAlreadyUsed as e:
+		print(e)
+		await interaction.followup.send(f"This card name already exists in this set, please chose a different one")
+	except Exception as e:
+		print("Error on Create Crature Card:" + str(e))
 		await interaction.followup.send(f"I choked and had to abort.")
 
 

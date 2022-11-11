@@ -23,6 +23,11 @@ trigger_words_from_mindbug = (  "Play:", "Ausspielen:",
                                 "Draw:", "Ziehen:"
                                 )
 
+class CardNameAlreadyUsed(Exception):
+    def __init__(self, cardname):
+        self.cardname = cardname
+        self.message = f"Card '{cardname}' already in use in this set"
+        super().__init__(self.message)
 
 #region HELPER FUNC
 def LoadingCardFrames():
@@ -135,14 +140,14 @@ def CreateAMindbugCard(artwork_filename: str, image_width: int, image_height: in
     myCard = Card(
         uid_from_set=uid_from_set,
         lang=lang,
-        name="MINDUBUG",
+        cardset=cardset,
+        name="MINDBUG",
         power = "",
         keywords = "",
         effect = "",
         quote = "",
         image_path=artwork_filename,
-        filename=pathname.split('/')[-1],
-        cardset=cardset
+        filename=pathname.split('/')[-1]
     )
 
     # Empty Card
@@ -245,10 +250,9 @@ def CreateAMindbugCard(artwork_filename: str, image_width: int, image_height: in
             newCardBackground.paste(set_logo, (int(x_pos - 15),int(y_pos - 12 )), set_logo)
 
     # Save the final card
-    myCard.final_card_name = f"{myCard.filename}_{myCard.lang}.png"
     card_folder = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), f"{myCard.cardset}", f"{myCard.lang}")
     Path(card_folder).mkdir(parents=True, exist_ok=True)
-    newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}_{myCard.lang}.png"), format="png", dpi = (300,300))
+    newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}.png"), format="png", dpi = (300,300))
     
     # Save final Card as Base64 String
     with BytesIO() as image_binary:
@@ -283,9 +287,8 @@ def CreateAMindbugCard(artwork_filename: str, image_width: int, image_height: in
     
     newCardBackground.close()
 
-    myCard.final_cropped_card_name = f"{myCard.filename}_{myCard.lang}_cropped.png"
-    tmp_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), "{}/{}/cropped/{}_{}_cropped.png".format(myCard.cardset,myCard.lang, myCard.filename,myCard.lang))
-    Path(os.getenv('CARD_OUTPUT_FOLDER') + "/{}/{}/cropped/".format(myCard.cardset,myCard.lang)).mkdir(parents=True, exist_ok=True)
+    tmp_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), myCard.cardset, myCard.lang, "cropped", myCard.filename)
+    Path(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), myCard.cardset, myCard.lang, "cropped")).mkdir(parents=True, exist_ok=True)
     final_card_without_sage_area.save(tmp_path, format="png", dpi = (300,300))
     final_card_without_sage_area.close()
 
@@ -364,11 +367,14 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
         effect = effect,
         quote = quote,
         image_path=artwork_filename,
-        filename=pathname.split('/')[-1],
+        filename=name,
         cardset=cardset
     )
 
-    print(f"Cooking Creature {myCard.name}")
+    if os.path.exists(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), myCard.relativePath())):
+        raise CardNameAlreadyUsed(myCard.name)
+
+    print(f"Cooking Creature '{myCard.name}'")
     
     # Empty Card
     newCardBackground = Image.new("RGBA",(816,1110), (0,0,0,0))
@@ -597,10 +603,9 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
             newCardBackground.paste(set_logo, (int(x_pos - 15),int(y_pos - 12 )), set_logo)
 
     # Save the final card
-    myCard.final_card_name = f"{myCard.filename}_{myCard.lang}.png"
     card_folder = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), f"{myCard.cardset}", f"{myCard.lang}")
     Path(card_folder).mkdir(parents=True, exist_ok=True)
-    newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}_{myCard.lang}.png"),format="png", dpi = (300,300))
+    newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}.png"), format="png", dpi = (300,300))
     
     # Save final Card as Base64 String
     with BytesIO() as image_binary:
@@ -634,9 +639,7 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
     
     newCardBackground.close()
 
-
-    myCard.final_cropped_card_name = f"{myCard.filename}_{myCard.lang}_cropped.png"
-    tmp_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), "{}/{}/cropped/{}_{}_cropped.png".format(myCard.cardset,myCard.lang, myCard.filename,myCard.lang))
+    tmp_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), "{}/{}/cropped/{}.png".format(myCard.cardset,myCard.lang, myCard.filename))
     Path(os.getenv('CARD_OUTPUT_FOLDER') + "/{}/{}/cropped/".format(myCard.cardset,myCard.lang)).mkdir(parents=True, exist_ok=True)
     final_card_without_sage_area.save(tmp_path, format="png", dpi = (300,300))
     final_card_without_sage_area.close()
