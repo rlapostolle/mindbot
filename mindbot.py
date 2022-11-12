@@ -15,14 +15,25 @@ from pymongo import MongoClient
 #region DB STUFF
 mongodb = MongoClient(host = os.getenv('DB_HOST'), port = int(os.getenv('DB_PORT')))
 
-def saveCardinDB(myInteraction: discord.Interaction, myCardToSave: Card):
+def saveCardinDB(myInteraction: discord.Interaction, myCardToSave: Card, existing_obj:dict=None):
 	print(myCardToSave.filename)
 	db = mongodb["cardcreator"]
 	obj = myCardToSave.toDdObj()
 	obj['user_id'] = myInteraction.user.id
 	obj['user_name'] = myInteraction.user.name
-	db["customcreatures"].insert_one(obj)
+	db["customcreatures"].replace_one(filter={ "_id" : (existing_obj["_id"] if existing_obj != None else None) }, replacement=obj, upsert=True)
 #endregion
+
+async def checkUserId(interaction: discord.Interaction, usertag: str):
+	try:
+		if usertag != None:
+			userid = int(re.search(r"<@!?(\d+)>", usertag).group(1))
+		else:
+			userid = None
+	except:
+		await interaction.response.send_message("Invalid user", ephemeral=True)
+		return
+	return userid
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -48,14 +59,8 @@ async def randomcard(interaction: discord.Interaction):
 
 @tree.command(name = "randomcustom", description = "Display a random custom card created by the community")
 async def randomcustom(interaction: discord.Interaction, user:str = None):
-	try:
-		if user != None:
-			userid = int(re.search(r"<@!?(\d+)>", user).group(1))
-		else:
-			userid = None
-	except:
-		await interaction.response.send_message("Invalid user", ephemeral=True)
-		return
+	userid = await checkUserId(interaction, user)
+	
 	await interaction.response.defer(ephemeral=False, thinking=True)
 
 	#Get a random card
@@ -78,6 +83,27 @@ async def randomcustom(interaction: discord.Interaction, user:str = None):
 			await interaction.followup.send("Sorry, there was an error while reading card...")
 	else:
 		await interaction.followup.send("No record available.")
+
+@tree.command(name = "customcards", description = "Display the list of cards from a user")
+async def customcards(interaction: discord.Interaction, user:str = None):
+	
+	userid = await checkUserId(interaction, user)
+	if userid == None:
+		userid = interaction.user.id
+
+	await interaction.response.defer(ephemeral=False, thinking=True)
+
+	#Get all cards from user
+	db = mongodb["cardcreator"]
+	cards = db["customcreatures"].find(filter={ "user_id": userid })
+
+	text = ""
+	for card in cards:
+		text += card["name"] + " [" + card["lang"] + "] from cardset '" + card["cardset"] + "'\n"
+	if text == "":
+		await interaction.followup.send("No record available.")
+	else:
+		await interaction.followup.send(text)
 
 @tree.command(name = "createamindbug", description = "Create a Mindbug Card with a given Artwork. The Artwork must be a PNG-File.")
 async def createmindbugcard(interaction: discord.InteractionMessage, artwork : discord.Attachment, lang: str, cardset: str, uid_from_set: str):
@@ -117,21 +143,31 @@ async def createmindbugcard(interaction: discord.InteractionMessage, artwork : d
 				await interaction.followup.send(file=discord.File(fp=image_binary, filename=f'image.png'))
 		else:
 			await interaction.response.send_message(f'No File')
-	except cardgenerator.CardNameAlreadyUsed as e:
-		print(e)
-		await interaction.followup.send(f"This card name already exists in this set, please chose a different one")
 	except Exception as e:
 		print("Error on Create Mindbug Card: " + str(e))
 		await interaction.followup.send(f"I choked and had to abort.")
 
 @tree.command(name = "createacreature", description = "Create a Creature Card with a given Artwork. The Artwork must be a PNG-File.")
-async def createcreaturecard(interaction: discord.InteractionMessage, artwork : discord.Attachment, lang: str, cardset: str, uid_from_set: str, name:str, power:str, effect:str = None, keywords:str = None, quote:str = None):
-	try:	
+async def createcreaturecard(interaction: discord.InteractionMessage, artwork : discord.Attachment, lang: str, cardset: str, uid_from_set: str, name:str, power:str, effect:str = None, keywords:str = None, quote:str = None, override:bool = False):
+	try:
 		if (artwork):
 			# The first answer must be given within 3sec.
 			await interaction.response.defer(ephemeral=False, thinking=True)
 			# From now on we have 15 minutes
-			# 			
+			
+			#Check if the card does not exist yet
+			db = mongodb["cardcreator"]
+			dbcard = db["customcreatures"].find_one({ 'cardset': cardset, 'lang': lang, 'name': name })
+			if dbcard != None:
+				if dbcard['user_id'] != interaction.user.id:
+					await interaction.followup.send(f"A card name already exists in this set and you cannot modify it.")
+					return
+				elif not override:
+					if dbcard['user_id'] == interaction.user.id:
+						await interaction.followup.send(f"This card name already exists in this set, please chose a different one or use override option to replace it.")
+						return
+
+
 			# Check if the Image is a PNG
 			ext = artwork.filename.split(".")[-1]
 			if ext not in image_whiteList:
@@ -164,18 +200,15 @@ async def createcreaturecard(interaction: discord.InteractionMessage, artwork : 
 													power=power, 
 													keywords=keywords, 
 													effect=effect, 
-													quote=quote )
+													quote=quote)
 				finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300))
 				image_binary.seek(0)
 				
-				saveCardinDB(interaction, finalCardObj)
+				saveCardinDB(interaction, finalCardObj, dbcard)
 				
 				await interaction.followup.send(file=discord.File(fp=image_binary, filename=artwork.filename))
 		else:
 			await interaction.response.send_message(f'No File')
-	except cardgenerator.CardNameAlreadyUsed as e:
-		print(e)
-		await interaction.followup.send(f"This card name already exists in this set, please chose a different one")
 	except Exception as e:
 		print("Error on Create Crature Card:" + str(e))
 		await interaction.followup.send(f"I choked and had to abort.")
