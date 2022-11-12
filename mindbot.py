@@ -35,6 +35,230 @@ async def checkUserId(interaction: discord.Interaction, usertag: str):
 		await interaction.response.send_message("Invalid user", ephemeral=True)
 		return
 	return userid
+#region HELPER FUNCS
+
+def getCardDataFromEmbed(myInteraction: discord.Interaction)
+	embedFields = myInteraction.message.embeds[0].to_dict()
+	NameField = 0
+	PowerField = 1
+	CapabilitiesField = 2
+	EffectField = 3
+	QuoteField = 4
+	CardnumberField = 5
+	SetnameField = 6
+	LanguageField = 7
+	FilenameField = 8
+
+	nameFieldAsDict = embedFields["fields"][NameField]
+	powerFiledAsDict = embedFields["fields"][PowerField]
+	CapabilitiesFieldAsDict = embedFields["fields"][CapabilitiesField]
+	EffectFieldAsDict = embedFields["fields"][EffectField]
+	QuoteFieldAsDict = embedFields["fields"][QuoteField]
+	CardnumberFielddAsDict = embedFields["fields"][CardnumberField]
+	SetnameFieldAsDict = embedFields["fields"][SetnameField]
+	LanguageFieldAsDict = embedFields["fields"][LanguageField]
+	filenameFiledAsDict = embedFields["fields"][FilenameField]
+		
+	name = nameFieldAsDict["value"]
+	power = powerFiledAsDict["value"]
+	capabilities = CapabilitiesFieldAsDict["value"]
+	effect = EffectFieldAsDict["value"]
+	quote = QuoteFieldAsDict["value"]
+	cardnumber = CardnumberFielddAsDict["value"]
+	setname = SetnameFieldAsDict["value"]
+	language = LanguageFieldAsDict["value"]
+	filename = filenameFiledAsDict["value"]
+			
+	return name, power, capabilities, effect, quote, cardnumber, setname, language, filename
+#endregion
+
+#region UI STUFF
+class EditCardName(ui.Modal, title='Edit Card Name'):
+	name = ui.TextInput(label='Name', placeholder="Sirus Snape", required=True)
+	async def on_submit(self, interaction: discord.Interaction):
+
+		
+		await interaction.response.defer(ephemeral=True, thinking=True)
+		# Update the Mindbug-Card
+		name, power, capabilities, effect, quote, cardnumber, setname, language, filename = getCardDataFromEmbed(interaction)
+
+		myEmbed = discord.Embed(color = discord.Color.random())
+		myEmbed.add_field(name="Name", value=self.name, inline=True) # Index 0
+		myEmbed.add_field(name="Power", value=power, inline=False) # Index 1
+		myEmbed.add_field(name="Capabilities", value=capabilities, inline=False) # Index 2
+		myEmbed.add_field(name="Effect", value=effect, inline=False) # Index 3
+		myEmbed.add_field(name="Quote", value=quote, inline=False) # Index 4
+		myEmbed.add_field(name="Cardnumber in Set", value=cardnumber, inline=False) # Index 5
+		myEmbed.add_field(name="Name from Set", value=setname, inline=False) # Index 6
+		myEmbed.add_field(name="Language", value=language, inline=False) # Index 7
+		myEmbed.add_field(name="Filename", value=f"{filename}", inline=True) # Index 8
+	
+		await interaction.followup.send(embed = myEmbed, view = EditMenu(), ephemeral=True)
+
+class EditCardPower(ui.Modal, title='Edit Card Power'):
+	power = ui.TextInput(label='Power', placeholder="9", required=True)
+	async def on_submit(self, interaction: discord.Interaction):
+
+		
+		await interaction.response.defer(ephemeral=True, thinking=True)
+		# Update the Mindbug-Card
+		name, power, capabilities, effect, quote, cardnumber, setname, language, filename = getCardDataFromEmbed(interaction)
+		
+		myEmbed = discord.Embed(color = discord.Color.random())
+		myEmbed.add_field(name="Name", value=name, inline=True) # Index 0
+		myEmbed.add_field(name="Power", value=self.power, inline=False) # Index 1
+		myEmbed.add_field(name="Capabilities", value=capabilities, inline=False) # Index 2
+		myEmbed.add_field(name="Effect", value=effect, inline=False) # Index 3
+		myEmbed.add_field(name="Quote", value=quote, inline=False) # Index 4
+		myEmbed.add_field(name="Cardnumber in Set", value=cardnumber, inline=False) # Index 5
+		myEmbed.add_field(name="Name from Set", value=setname, inline=False) # Index 6
+		myEmbed.add_field(name="Language", value=language, inline=False) # Index 7
+		myEmbed.add_field(name="Filename", value=f"{filename}", inline=True) # Index 8
+	
+		await interaction.followup.send(embed = myEmbed, view = EditMenu(), ephemeral=True)
+
+class EditCardCapabilites(ui.Modal, title='Edit Card Capabilites'):
+	capabilities = ui.TextInput(label='Keywords', placeholder="Frenzy, Tough", required=False)
+	# effect = ui.TextInput(label='Effect', placeholder="#Play: Draw a card. #Defeat: Gain +1 HP.", required=False)
+	# quote = ui.TextInput(label='Quote', placeholder="Nothing special", required=False)
+	# lang = ui.TextInput(label='Language', placeholder="en", required=True)
+	# cardset = ui.TextInput(label='Card Set', placeholder="Second Wave", required=True)
+	# uid_from_set = ui.TextInput(label='Cardnumber', placeholder="1/24", required=True)
+
+	async def on_submit(self, interaction: discord.Interaction):
+
+		
+		await interaction.response.defer(ephemeral=True, thinking=True)
+		# Update the Mindbug-Card
+		name, power, capabilities, effect, quote, cardnumber, setname, language, filename = getCardDataFromEmbed(interaction)
+		
+		myEmbed = discord.Embed(color = discord.Color.random())
+		myEmbed.add_field(name="Name", value=name, inline=True) # Index 0
+		myEmbed.add_field(name="Power", value=power, inline=False) # Index 1
+		myEmbed.add_field(name="Capabilities", value=self.capabilities, inline=False) # Index 2
+		myEmbed.add_field(name="Effect", value=effect, inline=False) # Index 3
+		myEmbed.add_field(name="Quote", value=quote, inline=False) # Index 4
+		myEmbed.add_field(name="Cardnumber in Set", value=cardnumber, inline=False) # Index 5
+		myEmbed.add_field(name="Name from Set", value=setname, inline=False) # Index 6
+		myEmbed.add_field(name="Language", value=language, inline=False) # Index 7
+		myEmbed.add_field(name="Filename", value=f"{filename}", inline=True) # Index 8
+	
+		await interaction.followup.send(embed = myEmbed, view = EditMenu(), ephemeral=True)
+
+
+class EditCardEffect(ui.Modal, title='Edit Card Effect'):
+	effect = ui.TextInput(label='Effect', placeholder="#Play: Draw a card. #Defeat: Gain +1 HP.", required=False)
+	async def on_submit(self, interaction: discord.Interaction):
+
+		
+		await interaction.response.defer(ephemeral=True, thinking=True)
+		# Update the Mindbug-Card
+		name, power, capabilities, effect, quote, cardnumber, setname, language, filename = getCardDataFromEmbed(interaction)
+		
+		myEmbed = discord.Embed(color = discord.Color.random())
+		myEmbed.add_field(name="Name", value=name, inline=True) # Index 0
+		myEmbed.add_field(name="Power", value=power, inline=False) # Index 1
+		myEmbed.add_field(name="Capabilities", value=capabilities, inline=False) # Index 2
+		myEmbed.add_field(name="Effect", value=self.effect, inline=False) # Index 3
+		myEmbed.add_field(name="Quote", value=quote, inline=False) # Index 4
+		myEmbed.add_field(name="Cardnumber in Set", value=cardnumber, inline=False) # Index 5
+		myEmbed.add_field(name="Name from Set", value=setname, inline=False) # Index 6
+		myEmbed.add_field(name="Language", value=language, inline=False) # Index 7
+		myEmbed.add_field(name="Filename", value=f"{filename}", inline=True) # Index 8
+	
+		await interaction.followup.send(embed = myEmbed, view = EditMenu(), ephemeral=True)
+
+class EditCardQuote(ui.Modal, title='Edit Card Quote'):
+	quote = ui.TextInput(label='Quote', placeholder="Nothing special", required=False)
+
+	async def on_submit(self, interaction: discord.Interaction):
+
+			
+		await interaction.response.defer(ephemeral=True, thinking=True)
+		# Update the Mindbug-Card
+		name, power, capabilities, effect, quote, cardnumber, setname, language, filename = getCardDataFromEmbed(interaction)
+		
+		myEmbed = discord.Embed(color = discord.Color.random())
+		myEmbed.add_field(name="Name", value=name, inline=True) # Index 0
+		myEmbed.add_field(name="Power", value=power, inline=False) # Index 1
+		myEmbed.add_field(name="Capabilities", value=capabilities, inline=False) # Index 2
+		myEmbed.add_field(name="Effect", value=effect, inline=False) # Index 3
+		myEmbed.add_field(name="Quote", value=self.quote, inline=False) # Index 4
+		myEmbed.add_field(name="Cardnumber in Set", value=cardnumber, inline=False) # Index 5
+		myEmbed.add_field(name="Name from Set", value=setname, inline=False) # Index 6
+		myEmbed.add_field(name="Language", value=language, inline=False) # Index 7
+		myEmbed.add_field(name="Filename", value=f"{filename}", inline=True) # Index 8
+	
+		await interaction.followup.send(embed = myEmbed, view = EditMenu(), ephemeral=True)
+
+class EditCardLanguage(ui.Modal, title='Edit Card Language'):
+	lang = ui.TextInput(label='Language', placeholder="en", required=True)
+	async def on_submit(self, interaction: discord.Interaction):
+
+		
+		await interaction.response.defer(ephemeral=True, thinking=True)
+		# Update the Mindbug-Card
+		name, power, capabilities, effect, quote, cardnumber, setname, language, filename = getCardDataFromEmbed(interaction)
+		
+		myEmbed = discord.Embed(color = discord.Color.random())
+		myEmbed.add_field(name="Name", value=name, inline=True) # Index 0
+		myEmbed.add_field(name="Power", value=power, inline=False) # Index 1
+		myEmbed.add_field(name="Capabilities", value=capabilities, inline=False) # Index 2
+		myEmbed.add_field(name="Effect", value=effect, inline=False) # Index 3
+		myEmbed.add_field(name="Quote", value=quote, inline=False) # Index 4
+		myEmbed.add_field(name="Cardnumber in Set", value=cardnumber, inline=False) # Index 5
+		myEmbed.add_field(name="Name from Set", value=setname, inline=False) # Index 6
+		myEmbed.add_field(name="Language", value=self.language, inline=False) # Index 7
+		myEmbed.add_field(name="Filename", value=f"{filename}", inline=True) # Index 8
+	
+		await interaction.followup.send(embed = myEmbed, view = EditMenu(), ephemeral=True)
+
+class EditCardSet(ui.Modal, title='Edit Card Setname'):
+	cardset = ui.TextInput(label='Name from Set', placeholder="Second Wave", required=True)
+
+	async def on_submit(self, interaction: discord.Interaction):
+
+		
+		await interaction.response.defer(ephemeral=True, thinking=True)
+		# Update the Mindbug-Card
+		name, power, capabilities, effect, quote, cardnumber, setname, language, filename = getCardDataFromEmbed(interaction)
+		
+		myEmbed = discord.Embed(color = discord.Color.random())
+		myEmbed.add_field(name="Name", value=name, inline=True) # Index 0
+		myEmbed.add_field(name="Power", value=power, inline=False) # Index 1
+		myEmbed.add_field(name="Capabilities", value=capabilities, inline=False) # Index 2
+		myEmbed.add_field(name="Effect", value=effect, inline=False) # Index 3
+		myEmbed.add_field(name="Quote", value=quote, inline=False) # Index 4
+		myEmbed.add_field(name="Cardnumber in Set", value=cardnumber, inline=False) # Index 5
+		myEmbed.add_field(name="Name from Set", value=self.setname, inline=False) # Index 6
+		myEmbed.add_field(name="Language", value=lang, inline=False) # Index 7
+		myEmbed.add_field(name="Filename", value=f"{filename}", inline=True) # Index 8
+	
+		await interaction.followup.send(embed = myEmbed, view = EditMenu(), ephemeral=True)
+
+class EditCardNumber(ui.Modal, title='Edit Card Number'):
+	cardnumber = ui.TextInput(label='Cardnumber', placeholder="1/24", required=True)
+
+	async def on_submit(self, interaction: discord.Interaction):
+
+		
+		await interaction.response.defer(ephemeral=True, thinking=True)
+		# Update the Mindbug-Card
+		name, power, capabilities, effect, quote, cardnumber, setname, language, filename = getCardDataFromEmbed(interaction)
+		
+		myEmbed = discord.Embed(color = discord.Color.random())
+		myEmbed.add_field(name="Name", value=name, inline=True) # Index 0
+		myEmbed.add_field(name="Power", value=power, inline=False) # Index 1
+		myEmbed.add_field(name="Capabilities", value=capabilities, inline=False) # Index 2
+		myEmbed.add_field(name="Effect", value=effect, inline=False) # Index 3
+		myEmbed.add_field(name="Quote", value=quote, inline=False) # Index 4
+		myEmbed.add_field(name="Cardnumber in Set", value=self.cardnumber, inline=False) # Index 5
+		myEmbed.add_field(name="Name from Set", value=setname, inline=False) # Index 6
+		myEmbed.add_field(name="Language", value=lang, inline=False) # Index 7
+		myEmbed.add_field(name="Filename", value=f"{filename}", inline=True) # Index 8
+	
+		await interaction.followup.send(embed = myEmbed, view = EditMenu(), ephemeral=True)
+#endregion
 
 intents = discord.Intents.default()
 intents.message_content = True
