@@ -23,12 +23,6 @@ trigger_words_from_mindbug = (  "Play:", "Ausspielen:",
                                 "Draw:", "Ziehen:"
                                 )
 
-class CardNameAlreadyUsed(Exception):
-    def __init__(self, cardname):
-        self.cardname = cardname
-        self.message = f"Card '{cardname}' already in use in this set"
-        super().__init__(self.message)
-
 #region HELPER FUNC
 def LoadingCardFrames():
     print("Loading card frames:")
@@ -370,9 +364,6 @@ def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: i
         filename=name,
         cardset=cardset
     )
-
-    if os.path.exists(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), myCard.relativePath())):
-        raise CardNameAlreadyUsed(myCard.name)
 
     print(f"Cooking Creature '{myCard.name}'")
     
