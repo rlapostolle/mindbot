@@ -6,6 +6,8 @@ Current supported commands:
 
 - /card X : display the card info named X. There is a tolerance with typo.
 - /randomcard : display a random card
+- /createmindbugcard : Create a Mindbug Card with a given Artwork.
+- /createcreaturecard : Create a Creature Card with a given Artwork.
 
 # Install
 
