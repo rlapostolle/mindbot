@@ -6,7 +6,9 @@ Current supported commands:
 
 - /card X : display the card info named X. There is a tolerance with typo.
 - /randomcard : display a random card
-- /createmindbugcard : Create a Mindbug Card with a given Artwork.
+- /randomcustom: Display a random custom card created by the community.
+- /customcards: Display the list of cards from a user.
+- /createmindbug : Create a Mindbug Card with a given Artwork.
 - /createcreaturecard : Create a Creature Card with a given Artwork.
 
 # Install
