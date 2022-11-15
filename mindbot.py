@@ -25,7 +25,10 @@ def saveCardinDB(myInteraction: discord.Interaction, myCardToSave: Card, existin
 	obj = myCardToSave.toDdObj()
 	obj['user_id'] = myInteraction.user.id
 	obj['user_name'] = myInteraction.user.name
-	db["customcreatures"].replace_one(filter={ "_id" : (existing_obj["_id"] if existing_obj != None else None) }, replacement=obj, upsert=True)
+	if existing_obj != None:
+		db["customcreatures"].replace_one(filter={ "_id" : existing_obj["_id"] }, replacement=obj, upsert=True)
+	else:
+		db["customcreatures"].insert_one(obj)
 #endregion
 
 async def checkUserId(interaction: discord.Interaction, usertag: str):
@@ -50,60 +53,46 @@ embed_description = "Name: \nUnique name between 1-16 characters \n\nPower: \nPo
 #endregion
 
 #region HELPER FUNCS
-def str2bool(v):
+def str2bool(v) -> bool:
     return v.lower() in ("yes", "true", "t", "1")
 
-def getCardDataFromEmbed(myInteraction: discord.Interaction):
-	embedFields = myInteraction.message.embeds[0].to_dict()
-	NameField = 0
-	PowerField = 1
-	CapabilitiesField = 2
-	EffectField = 3
-	QuoteField = 4
-	CardnumberField = 5
-	SetnameField = 6
-	LanguageField = 7
-	FilenameField = 8
-	OverrideField = 9
+class embeddata:
+	def __init__(self, myInteraction: discord.Interaction):
+		embedFields = myInteraction.message.embeds[0].to_dict()
 
-	nameFieldAsDict = embedFields["fields"][NameField]
-	powerFieldAsDict = embedFields["fields"][PowerField]
-	CapabilitiesFieldAsDict = embedFields["fields"][CapabilitiesField]
-	EffectFieldAsDict = embedFields["fields"][EffectField]
-	QuoteFieldAsDict = embedFields["fields"][QuoteField]
-	CardnumberFieldAsDict = embedFields["fields"][CardnumberField]
-	SetnameFieldAsDict = embedFields["fields"][SetnameField]
-	LanguageFieldAsDict = embedFields["fields"][LanguageField]
-	filenameFieldAsDict = embedFields["fields"][FilenameField]
-	overrideFieldAsDict = embedFields["fields"][OverrideField]
-		
-	name = nameFieldAsDict["value"]
-	power = powerFieldAsDict["value"]
-	capabilities = CapabilitiesFieldAsDict["value"]
-	effect = EffectFieldAsDict["value"]
-	quote = QuoteFieldAsDict["value"]
-	cardnumber = CardnumberFieldAsDict["value"]
-	setname = SetnameFieldAsDict["value"]
-	language = LanguageFieldAsDict["value"]
-	filename = filenameFieldAsDict["value"]
-	override = overrideFieldAsDict["value"]
-			
-	return name, power, capabilities, effect, quote, cardnumber, setname, language, filename, str2bool(override)
+		self.name = embedFields["fields"][0]["value"]
+		self.power = embedFields["fields"][1]["value"]
+		self.capabilities = embedFields["fields"][2]["value"]
+		self.effect = embedFields["fields"][3]["value"]
+		self.quote = embedFields["fields"][4]["value"]
+		self.cardnumber = embedFields["fields"][5]["value"]
+		self.setname = embedFields["fields"][6]["value"]
+		self.language = embedFields["fields"][7]["value"]
+		self.filename = embedFields["fields"][8]["value"]
+		self.override = embedFields["fields"][9]["value"]
 #endregion
 
 #region UI STUFF
 class EditCardData(ui.Modal, title='Edit Card Name'):
-	
-	nameInput = ui.TextInput(label='Name', placeholder="Sirus Snape", required=True, min_length=1, max_length=16) # The value from Lenght based on 16x"X", then the Name fit in the Box
-	powerInput = ui.TextInput(label='Power', placeholder="9", required=True, min_length=1, max_length=3)
-	capabilitiesInput = ui.TextInput(label='Keywords', placeholder="Frenzy, Tough", required=False)
-	effectInput = ui.TextInput(label='Effect', placeholder="#Play: Draw a card. #Defeat: Gain +1 HP.", required=False)
-	quoteInput = ui.TextInput(label='Quote', placeholder="Nothing special", required=False)
+
+	def __init__(self, interaction: discord.Interaction):
+		super().__init__()
+		data = embeddata(interaction)
+		self.nameInput = ui.TextInput(label='Name', default=data.name if data.name != "?" else "", placeholder="Sirus Snape", required=True, min_length=1, max_length=16)
+		self.add_item(self.nameInput)
+		self.powerInput = ui.TextInput(label='Power', default=data.power if data.power != "?" else "", placeholder="9", required=True, min_length=1, max_length=3)
+		self.add_item(self.powerInput)
+		self.capabilitiesInput = ui.TextInput(label='Keywords', default=data.capabilities if data.capabilities != "?" else "", placeholder="Frenzy, Tough", required=False)
+		self.add_item(self.capabilitiesInput)
+		self.effectInput = ui.TextInput(label='Effect', default=data.effect if data.effect != "?" else "", placeholder="#Play: Draw a card. #Defeat: Gain 1 life point.", required=False)
+		self.add_item(self.effectInput)
+		self.quoteInput = ui.TextInput(label='Quote', default=data.quote if data.quote != "?" else "", placeholder="Nothing special", required=False)
+		self.add_item(self.quoteInput)
 	
 	async def on_submit(self, interaction: discord.Interaction):
 		await interaction.response.defer(ephemeral=True, thinking=True)
 		# Update the Mindbug-Card
-		name, power, capabilities, effect, quote, cardnumber, setname, language, filename, override= getCardDataFromEmbed(interaction)
+		data = embeddata(interaction)
 
 		myEmbed = discord.Embed(title=CARD_GENERATOR_APP_NAME, url=BUG_TRACKING_URL,color = discord.Color.random(), description=embed_description)
 		myEmbed.add_field(name="Name", value=self.nameInput.value.strip(), inline=True) # Index 0
@@ -111,39 +100,45 @@ class EditCardData(ui.Modal, title='Edit Card Name'):
 		myEmbed.add_field(name="Capabilities", value=self.capabilitiesInput.value.strip() if (len(self.capabilitiesInput.value)  != 0 ) else "?", inline=False) # Index 2
 		myEmbed.add_field(name="Effect", value=self.effectInput.value.strip() if (len(self.effectInput.value)  != 0 ) else "?"  , inline=False) # Index 3
 		myEmbed.add_field(name="Quote", value=self.quoteInput.value.strip() if (len(self.quoteInput.value) != 0 ) else "?" , inline=False) # Index 4
-		myEmbed.add_field(name="Cardnumber in Set", value=cardnumber, inline=False) # Index 5
-		myEmbed.add_field(name="Name from Set", value=setname, inline=False) # Index 6
-		myEmbed.add_field(name="Language", value=language, inline=False) # Index 7
-		myEmbed.add_field(name="Filename", value=f"{filename}", inline=False) # Index 8
-		myEmbed.add_field(name="Override", value=f"{override}", inline=False) # Index 9
+		myEmbed.add_field(name="Cardnumber in Set", value=data.cardnumber, inline=False) # Index 5
+		myEmbed.add_field(name="Name from Set", value=data.setname, inline=False) # Index 6
+		myEmbed.add_field(name="Language", value=data.language, inline=False) # Index 7
+		myEmbed.add_field(name="Filename", value=str(data.filename), inline=False) # Index 8
+		myEmbed.add_field(name="Override", value=str(data.override), inline=False) # Index 9
 		myEmbed.set_footer(text="mindbug.me")
 	
 		await interaction.followup.send(embed = myEmbed, view = EditMenu(), ephemeral=True)
 
 class EditCardMetaData(ui.Modal, title='Edit Card Name'):
 	
-	languageInput = ui.TextInput(label='Language', placeholder="en", required=True, min_length=2, max_length=2)
-	setnameInput = ui.TextInput(label='Card Set', placeholder="Second Wave", required=True)
-	uid_from_setInput = ui.TextInput(label='Cardnumber', placeholder="1/24", required=True)
+	def __init__(self, interaction: discord.Interaction):
+		super().__init__()
+		data = embeddata(interaction)
+		self.languageInput = ui.TextInput(label='Language', default=data.language, placeholder="en", required=True, min_length=2, max_length=2)
+		self.add_item(self.languageInput)
+		self.setnameInput = ui.TextInput(label='Card Set', default=data.setname, placeholder="Second Wave", required=True)
+		self.add_item(self.setnameInput)
+		self.uid_from_setInput = ui.TextInput(label='Cardnumber', default=data.cardnumber, placeholder="1/24", required=True)
+		self.add_item(self.uid_from_setInput)
 	
 	async def on_submit(self, interaction: discord.Interaction):
 
 		await interaction.response.defer(ephemeral=True, thinking=True)
 		# Update the Mindbug-Card
-		name, power, capabilities, effect, quote, cardnumber, setname, language, filename, override = getCardDataFromEmbed(interaction)
+		data = embeddata(interaction)
 
 		myEmbed = discord.Embed(title=CARD_GENERATOR_APP_NAME, url=BUG_TRACKING_URL, color = discord.Color.random(), description=embed_description)
-		myEmbed.add_field(name="Name", value=name, inline=True) # Index 0
-		myEmbed.add_field(name="Power", value=power, inline=False) # Index 1
-		myEmbed.add_field(name="Capabilities", value=capabilities, inline=False) # Index 2
-		myEmbed.add_field(name="Effect", value=effect, inline=False) # Index 3
-		myEmbed.add_field(name="Quote", value=quote, inline=False) # Index 4
+		myEmbed.add_field(name="Name", value=data.name, inline=True) # Index 0
+		myEmbed.add_field(name="Power", value=data.power, inline=False) # Index 1
+		myEmbed.add_field(name="Capabilities", value=data.capabilities, inline=False) # Index 2
+		myEmbed.add_field(name="Effect", value=data.effect, inline=False) # Index 3
+		myEmbed.add_field(name="Quote", value=data.quote, inline=False) # Index 4
 		myEmbed.add_field(name="Cardnumber in Set", value=self.uid_from_setInput.value.strip(), inline=False) # Index 5
 		myEmbed.add_field(name="Name from Set", value=self.setnameInput.value.strip(), inline=False) # Index 6
 		myEmbed.add_field(name="Language", value=self.languageInput.value.strip(), inline=False) # Index 7
-		myEmbed.add_field(name="Filename", value=f"{filename}", inline=False) # Index 8
-		myEmbed.add_field(name="Override", value=f"{override}", inline=False) # Index 9	
-		myEmbed.set_footer(text="mindbug.me")	
+		myEmbed.add_field(name="Filename", value=str(data.filename), inline=False) # Index 8
+		myEmbed.add_field(name="Override", value=str(data.override), inline=False) # Index 9	
+		myEmbed.set_footer(text="http://mindbug.me")	
 	
 		await interaction.followup.send(embed = myEmbed, view = EditMenu(), ephemeral=True)
 
@@ -153,11 +148,11 @@ class EditMenu(discord.ui.View):
 
 	@discord.ui.button(custom_id = "EditCardDataButton",label="Data" ,emoji="✏️", style=discord.ButtonStyle.gray, row=0)
 	async def editCardData(self, interaction: discord.Interaction, button: discord.ui.Button):
-		await interaction.response.send_modal(EditCardData())
+		await interaction.response.send_modal(EditCardData(interaction=interaction))
 
 	@discord.ui.button(custom_id = "EditCardMetaDataButton",label="Meta" ,emoji="✏️", style=discord.ButtonStyle.gray, row=0)
 	async def editCardMeta(self, interaction: discord.Interaction, button: discord.ui.Button):
-		await interaction.response.send_modal(EditCardMetaData())
+		await interaction.response.send_modal(EditCardMetaData(interaction=interaction))
 
 	@discord.ui.button(custom_id = "PreviewButton",label="Preview",emoji="🖼️", style=discord.ButtonStyle.red,row=2)
 	async def previewCard(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -165,47 +160,48 @@ class EditMenu(discord.ui.View):
 		await interaction.response.defer(ephemeral=True, thinking=True)
 		# Update the Mindbug-Card
 		with BytesIO() as image_binary:
-			name, power, capabilities, effect, quote, cardnumber, setname, language, filename, override = getCardDataFromEmbed(interaction)
+			data = embeddata(interaction)
 
-			finalCardAsImage, finalCardObj = cardgenerator.CreateACreatureCard(artwork_filename=filename,
-												uid_from_set=cardnumber,
-												lang=language,
-												name=name,
-												power = power,
-												keywords = capabilities if (capabilities  != "?" ) else "",
-												effect = effect if (effect  != "?" ) else "",
-												quote = quote if (quote  != "?" ) else "",
-												cardset=setname
+			finalCardAsImage, finalCardObj = cardgenerator.CreateACreatureCard(
+												artwork_filename = data.filename,
+												uid_from_set=data.cardnumber,
+												lang = data.language,
+												name = data.name,
+												power = data.power,
+												keywords = data.capabilities if (data.capabilities  != "?" ) else "",
+												effect = data.effect if (data.effect  != "?" ) else "",
+												quote = data.quote if (data.quote  != "?" ) else "",
+												cardset=data.setname
 												)
 			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300))
 			image_binary.seek(0)
 
 			myEmbed = discord.Embed(title=CARD_GENERATOR_APP_NAME, url=BUG_TRACKING_URL,color = discord.Color.random(), description=embed_description)
-			myEmbed.set_image(url=f"attachment://{filename}")
-			myEmbed.add_field(name="Name", value=name, inline=True) # Index 0
-			myEmbed.add_field(name="Power", value=power, inline=False) # Index 1
-			myEmbed.add_field(name="Capabilities", value=capabilities, inline=False) # Index 2
-			myEmbed.add_field(name="Effect", value=effect, inline=False) # Index 3
-			myEmbed.add_field(name="Quote", value=quote, inline=False) # Index 4
-			myEmbed.add_field(name="Cardnumber in Set", value=cardnumber, inline=False) # Index 5
-			myEmbed.add_field(name="Setname", value=setname, inline=False) # Index 6
-			myEmbed.add_field(name="Language", value=language, inline=False) # Index 7
-			myEmbed.add_field(name="Filename", value=f"{filename}", inline=False) # Index 8
-			myEmbed.add_field(name="Override", value=f"{override}", inline=False) # Index 9
+			myEmbed.set_image(url=f"attachment://{data.filename}")
+			myEmbed.add_field(name="Name", value=data.name, inline=True) # Index 0
+			myEmbed.add_field(name="Power", value=data.power, inline=False) # Index 1
+			myEmbed.add_field(name="Capabilities", value=data.capabilities, inline=False) # Index 2
+			myEmbed.add_field(name="Effect", value=data.effect, inline=False) # Index 3
+			myEmbed.add_field(name="Quote", value=data.quote, inline=False) # Index 4
+			myEmbed.add_field(name="Cardnumber in Set", value=data.cardnumber, inline=False) # Index 5
+			myEmbed.add_field(name="Setname", value=data.setname, inline=False) # Index 6
+			myEmbed.add_field(name="Language", value=data.language, inline=False) # Index 7
+			myEmbed.add_field(name="Filename", value=str(data.filename), inline=False) # Index 8
+			myEmbed.add_field(name="Override", value=str(data.override), inline=False) # Index 9
 			myEmbed.set_footer(text="mindbug.me")
 		
-			await interaction.followup.send(embed = myEmbed, view = EditMenu(), file=discord.File(fp=image_binary, filename=filename), ephemeral=True)
+			await interaction.followup.send(embed = myEmbed, view = EditMenu(), file=discord.File(fp=image_binary, filename=data.filename), ephemeral=True)
 
 	@discord.ui.button(custom_id = "ReleaseButton",label="", emoji="✔️",style=discord.ButtonStyle.green ,row=2)
 	async def releaseCard(self, interaction: discord.Interaction, button: discord.ui.Button):
 		
 		await interaction.response.defer(ephemeral=False, thinking=True)
 
-		name, power, capabilities, effect, quote, cardnumber, cardset, lang, filename , override = getCardDataFromEmbed(interaction)
+		data = embeddata(interaction)
 
 		#Check if the card does not exist yet
 		db = mongodb["cardcreator"]
-		dbcard = db["customcreatures"].find_one({ 'cardset': cardset, 'lang': lang, 'name': name })
+		dbcard = db["customcreatures"].find_one({ 'cardset': data.setname, 'lang': data.language, 'name': data.name })
 		if dbcard != None:
 			if dbcard['user_id'] != interaction.user.id:
 				await interaction.followup.send(f"A card name already exists in this set and you cannot modify it.", ephemeral=True)
@@ -218,23 +214,24 @@ class EditMenu(discord.ui.View):
 		# Update the Mindbug-Card
 		with BytesIO() as image_binary:
 	
-			finalCardAsImage, finalCardObj = cardgenerator.CreateACreatureCard(artwork_filename=filename,
-												uid_from_set=cardnumber,
-												lang=lang,
-												name=name,
-												power = power,
-												keywords = capabilities if (capabilities  != "?" ) else "",
-												effect = effect if (effect  != "?" ) else "",
-												quote = quote if (quote  != "?" ) else "",
-												cardset=cardset
+			finalCardAsImage, finalCardObj = cardgenerator.CreateACreatureCard(
+												artwork_filename = data.filename,
+												uid_from_set = data.cardnumber,
+												lang = data.language,
+												name = data.name,
+												power = data.power,
+												keywords = data.capabilities if (data.capabilities  != "?" ) else "",
+												effect = data.effect if (data.effect  != "?" ) else "",
+												quote = data.quote if (data.quote  != "?" ) else "",
+												cardset = data.setname
 												)
 			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300))
 			image_binary.seek(0)
 			
-			saveCardinDB(interaction, finalCardObj)
+			saveCardinDB(interaction, finalCardObj, dbcard)
 		
 			# await interaction.followup.send(embed = myEmbed, view = EditMenu(), file=discord.File(fp=image_binary, filename=filename), ephemeral=False)
-			message = await interaction.followup.send(content="Release #1", file=discord.File(fp=image_binary, filename=filename), ephemeral=False)
+			message = await interaction.followup.send(content="Release #1 from <@" + str(interaction.user.id) + ">", file=discord.File(fp=image_binary, filename=data.filename), ephemeral=False)
 			await message.add_reaction('\N{THUMBS UP SIGN}')
 
 #endregion
@@ -375,17 +372,17 @@ async def createcreaturecard(interaction: discord.Interaction, artwork : discord
 
 			# Create the Mindbug-Card
 			myEmbed = discord.Embed(title=CARD_GENERATOR_APP_NAME, url=BUG_TRACKING_URL,color = discord.Color.random(), description=embed_description)
-			myEmbed.add_field(name="Name", value="Sirus Snape", inline=True) # Index 0
-			myEmbed.add_field(name="Power", value="X", inline=False) # Index 1
+			myEmbed.add_field(name="Name", value="?", inline=True) # Index 0
+			myEmbed.add_field(name="Power", value="?", inline=False) # Index 1
 			myEmbed.add_field(name="Capabilities", value="?", inline=False) # Index 2
 			myEmbed.add_field(name="Effect", value= "?"  , inline=False) # Index 3
 			myEmbed.add_field(name="Quote", value= "?" , inline=False) # Index 4
-			myEmbed.add_field(name="Cardnumber in Set", value="1/1", inline=False) # Index 5
+			myEmbed.add_field(name="Cardnumber in Set", value="1", inline=False) # Index 5
 			myEmbed.add_field(name="Name from Set", value="default", inline=False) # Index 6
 			myEmbed.add_field(name="Language", value="en", inline=False) # Index 7
 			myEmbed.add_field(name="Filename", value=f"{artwork_filename}", inline=False) # Index 8
 			myEmbed.add_field(name="Override", value=f"{override}", inline=False) # Index 8
-			myEmbed.set_footer(text="mindbug.me")
+			myEmbed.set_footer(text="http://mindbug.me")
 			await interaction.followup.send(embed=myEmbed, view=EditMenu())
 		else:
 			await interaction.response.send_message(f'No File')
