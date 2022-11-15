@@ -13,6 +13,9 @@ from io import BytesIO
 from discord import app_commands, ui
 from pymongo import MongoClient, ASCENDING
 
+CARD_GENERATOR_APP_NAME="Card Generator 0.0.2"
+BUG_TRACKING_URL="https://github.com/rlapostolle/mindbot/issues"
+
 #region DB STUFF
 mongodb = MongoClient(host = os.getenv('DB_HOST'), port = int(os.getenv('DB_PORT')))
 
@@ -102,7 +105,7 @@ class EditCardData(ui.Modal, title='Edit Card Name'):
 		# Update the Mindbug-Card
 		name, power, capabilities, effect, quote, cardnumber, setname, language, filename, override= getCardDataFromEmbed(interaction)
 
-		myEmbed = discord.Embed(title="Card Generator 0.0.2", url="https://github.com/rlapostolle/mindbot/issues",color = discord.Color.random(), description=embed_description)
+		myEmbed = discord.Embed(title=CARD_GENERATOR_APP_NAME, url=BUG_TRACKING_URL,color = discord.Color.random(), description=embed_description)
 		myEmbed.add_field(name="Name", value=self.nameInput.value.strip(), inline=True) # Index 0
 		myEmbed.add_field(name="Power", value=self.powerInput.value.strip(), inline=False) # Index 1
 		myEmbed.add_field(name="Capabilities", value=self.capabilitiesInput.value.strip() if (len(self.capabilitiesInput.value)  != 0 ) else "?", inline=False) # Index 2
@@ -129,7 +132,7 @@ class EditCardMetaData(ui.Modal, title='Edit Card Name'):
 		# Update the Mindbug-Card
 		name, power, capabilities, effect, quote, cardnumber, setname, language, filename, override = getCardDataFromEmbed(interaction)
 
-		myEmbed = discord.Embed(title="Card Generator 0.0.2", url="https://github.com/rlapostolle/mindbot/issues", color = discord.Color.random(), description=embed_description)
+		myEmbed = discord.Embed(title=CARD_GENERATOR_APP_NAME, url=BUG_TRACKING_URL, color = discord.Color.random(), description=embed_description)
 		myEmbed.add_field(name="Name", value=name, inline=True) # Index 0
 		myEmbed.add_field(name="Power", value=power, inline=False) # Index 1
 		myEmbed.add_field(name="Capabilities", value=capabilities, inline=False) # Index 2
@@ -177,7 +180,7 @@ class EditMenu(discord.ui.View):
 			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300))
 			image_binary.seek(0)
 
-			myEmbed = discord.Embed(title="Card Generator 0.0.2", url="https://github.com/rlapostolle/mindbot/issues",color = discord.Color.random(), description=embed_description)
+			myEmbed = discord.Embed(title=CARD_GENERATOR_APP_NAME, url=BUG_TRACKING_URL,color = discord.Color.random(), description=embed_description)
 			myEmbed.set_image(url=f"attachment://{filename}")
 			myEmbed.add_field(name="Name", value=name, inline=True) # Index 0
 			myEmbed.add_field(name="Power", value=power, inline=False) # Index 1
@@ -371,7 +374,7 @@ async def createcreaturecard(interaction: discord.Interaction, artwork : discord
 			# 	await artwork.save(os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"cardset_{cardset}.png"))
 
 			# Create the Mindbug-Card
-			myEmbed = discord.Embed(title="Card Generator 0.0.2", url="https://github.com/rlapostolle/mindbot/issues",color = discord.Color.random(), description=embed_description)
+			myEmbed = discord.Embed(title=CARD_GENERATOR_APP_NAME, url=BUG_TRACKING_URL,color = discord.Color.random(), description=embed_description)
 			myEmbed.add_field(name="Name", value="Sirus Snape", inline=True) # Index 0
 			myEmbed.add_field(name="Power", value="X", inline=False) # Index 1
 			myEmbed.add_field(name="Capabilities", value="?", inline=False) # Index 2
