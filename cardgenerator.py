@@ -127,7 +127,7 @@ def cleanup_triggers(myTriggers):
 
 # TODO: Safe all Input Images (Artwork, Set-Icon) as Base64 and use it in this Function
 # TODO: Generate the Card with CutingSaveArea
-def CreateAMindbugCard(artwork_filename: str, image_width: int, image_height: int, lang: str, cardset: str, uid_from_set: str):
+def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_set: str):
     print("Beam a Mindbug to the World.")
     
     pathname, extension = os.path.splitext(artwork_filename)	
@@ -339,7 +339,7 @@ def CreateAMindbugCard(artwork_filename: str, image_width: int, image_height: in
 
 # This Function Create a Card from a given File
 # TODO: Create a Edit Function wich use a Base64 String
-def CreateACreatureCard(artwork_filename: str, image_width: int, image_height: int, lang: str, cardset: str, uid_from_set: str, name: str, power: str, keywords:str = None, effect:str = None, quote:str= None):
+def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from_set: str, name: str, power: str, keywords:str = None, effect:str = None, quote:str= None):
    
     pathname, extension = os.path.splitext(artwork_filename)	
 
