@@ -383,7 +383,7 @@ async def createcreaturecard(interaction: discord.Interaction, artwork : discord
 			myEmbed.add_field(name="Filename", value=f"{artwork_filename}", inline=False) # Index 8
 			myEmbed.add_field(name="Override", value=f"{override}", inline=False) # Index 8
 			myEmbed.set_footer(text="mindbug.me")
-			message = await interaction.followup.send(embed=myEmbed, view=EditMenu())
+			await interaction.followup.send(embed=myEmbed, view=EditMenu())
 		else:
 			await interaction.response.send_message(f'No File')
 	except Exception as e:
