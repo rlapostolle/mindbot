@@ -329,7 +329,7 @@ async def createmindbugcard(interaction: discord.InteractionMessage, artwork : d
 
 			# Create the Mindbug-Card
 			with BytesIO() as image_binary:
-				finalCardAsImage, finalCardObj = cardgenerator.CreateAMindbugCard(artwork_filename=artwork.filename, lang=lang, cardset=cardset, uid_from_set=uid_from_set )
+				finalCardAsImage, finalCardObj = cardgenerator.CreateAMindbugCard(artwork_filename=artwork_filename, lang=lang, cardset=cardset, uid_from_set=uid_from_set )
 				finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300))
 				image_binary.seek(0)
 				saveCardinDB(interaction, finalCardObj)
