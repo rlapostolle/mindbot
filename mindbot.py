@@ -330,7 +330,7 @@ async def createmindbugcard(interaction: discord.InteractionMessage, artwork : d
 			# Create the Mindbug-Card
 			with BytesIO() as image_binary:
 				finalCardAsImage, finalCardObj = cardgenerator.CreateAMindbugCard(artwork_filename=artwork_filename, lang=lang, cardset=cardset, uid_from_set=uid_from_set )
-				finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300), optimize= True)
+				finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300))
 				image_binary.seek(0)
 				saveCardinDB(interaction, finalCardObj)
 
@@ -344,7 +344,7 @@ async def createmindbugcard(interaction: discord.InteractionMessage, artwork : d
 
 # First only an embed, the we can edit the data, add a preview Button and a release button
 @tree.command(name = "createacreature", description = "Create a Creature Card with a given Artwork.")
-async def createcreaturecard(interaction: discord.Interaction, artwork : discord.Attachment,override:bool = False ):
+async def createcreaturecard(interaction: discord.Interaction, artwork : discord.Attachment, override:bool = False ):
 	try:
 		if (artwork):
 			# The first answer must be given within 3sec.
