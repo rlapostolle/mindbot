@@ -206,7 +206,7 @@ class EditMenu(discord.ui.View):
 			if dbcard['user_id'] != interaction.user.id:
 				await interaction.followup.send(f"A card name already exists in this set and you cannot modify it.", ephemeral=True)
 				return
-			elif not override:
+			elif not data.override:
 				if dbcard['user_id'] == interaction.user.id:
 					await interaction.followup.send(f"This card name already exists in this set, please chose a different one or use override option to replace it.", ephemeral=True)
 					return
@@ -343,7 +343,7 @@ async def createmindbugcard(interaction: discord.InteractionMessage, artwork : d
 
 # First only an embed, the we can edit the data, add a preview Button and a release button
 @tree.command(name = "createacreature", description = "Create a Creature Card with a given Artwork.")
-async def createcreaturecard(interaction: discord.Interaction, artwork : discord.Attachment,override:bool = False ):
+async def createcreaturecard(interaction: discord.Interaction, artwork : discord.Attachment, override:bool = False ):
 	try:
 		if (artwork):
 			# The first answer must be given within 3sec.
