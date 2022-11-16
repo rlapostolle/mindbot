@@ -78,9 +78,9 @@ class EditCardData(ui.Modal, title='Edit Card Name'):
 	def __init__(self, interaction: discord.Interaction):
 		super().__init__()
 		data = embeddata(interaction)
-		self.nameInput = ui.TextInput(label='Name', default=data.name if data.name != "?" else "", placeholder="Sirus Snape", required=True, min_length=1, max_length=16)
+		self.nameInput = ui.TextInput(label='Name', default=data.name if data.name != "?" else "", placeholder="Sirus Snape", required=True, min_length=1, max_length=20)
 		self.add_item(self.nameInput)
-		self.powerInput = ui.TextInput(label='Power', default=data.power if data.power != "?" else "", placeholder="9", required=True, min_length=1, max_length=3)
+		self.powerInput = ui.TextInput(label='Power', default=data.power if data.power != "?" else "", placeholder="9", required=True, min_length=1, max_length=2)
 		self.add_item(self.powerInput)
 		self.capabilitiesInput = ui.TextInput(label='Keywords', default=data.capabilities if data.capabilities != "?" else "", placeholder="Frenzy, Tough", required=False)
 		self.add_item(self.capabilitiesInput)
@@ -173,7 +173,7 @@ class EditMenu(discord.ui.View):
 												quote = data.quote if (data.quote  != "?" ) else "",
 												cardset=data.setname
 												)
-			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300))
+			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300), optimize= True)
 			image_binary.seek(0)
 
 			myEmbed = discord.Embed(title=CARD_GENERATOR_APP_NAME, url=BUG_TRACKING_URL,color = discord.Color.random(), description=embed_description)
@@ -206,7 +206,7 @@ class EditMenu(discord.ui.View):
 			if dbcard['user_id'] != interaction.user.id:
 				await interaction.followup.send(f"A card name already exists in this set and you cannot modify it.", ephemeral=True)
 				return
-			elif not override:
+			elif not data.override:
 				if dbcard['user_id'] == interaction.user.id:
 					await interaction.followup.send(f"This card name already exists in this set, please chose a different one or use override option to replace it.", ephemeral=True)
 					return
@@ -225,7 +225,7 @@ class EditMenu(discord.ui.View):
 												quote = data.quote if (data.quote  != "?" ) else "",
 												cardset = data.setname
 												)
-			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300))
+			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300), optimize= True)
 			image_binary.seek(0)
 			
 			saveCardinDB(interaction, finalCardObj, dbcard)
@@ -329,12 +329,13 @@ async def createmindbugcard(interaction: discord.InteractionMessage, artwork : d
 
 			# Create the Mindbug-Card
 			with BytesIO() as image_binary:
-				finalCardAsImage, finalCardObj = cardgenerator.CreateAMindbugCard(artwork_filename=artwork.filename, lang=lang, cardset=cardset, uid_from_set=uid_from_set )
-				finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300))
+				finalCardAsImage, finalCardObj = cardgenerator.CreateAMindbugCard(artwork_filename=artwork_filename, lang=lang, cardset=cardset, uid_from_set=uid_from_set )
+				finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300), optimize= True)
 				image_binary.seek(0)
 				saveCardinDB(interaction, finalCardObj)
 
-				await interaction.followup.send(file=discord.File(fp=image_binary, filename=f'image.png'))
+				message = await interaction.followup.send(content="Release #1 from <@" + str(interaction.user.id) + ">", file=discord.File(fp=image_binary, filename=artwork_filename), ephemeral=False)
+				await message.add_reaction('\N{THUMBS UP SIGN}')
 		else:
 			await interaction.response.send_message(f'No File')
 	except Exception as e:
