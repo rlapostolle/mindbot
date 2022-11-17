@@ -4,7 +4,7 @@ from PIL import Image, ImageFont, ImageDraw, ImageFilter, ImageOps
 from pathlib import Path
 from models import Card
 
-
+optimize_pngs:bool = True
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 card_frame_normal = None
 card_frame_mindbug = None
@@ -126,7 +126,6 @@ def cleanup_triggers(myTriggers):
 
 
 # TODO: Safe all Input Images (Artwork, Set-Icon) as Base64 and use it in this Function
-# TODO: Generate the Card with CutingSaveArea
 def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_set: str):
     print("Beam a Mindbug to the World.")
     
@@ -246,7 +245,7 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
     # Save the final card
     card_folder = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), f"{myCard.cardset}", f"{myCard.lang}")
     Path(card_folder).mkdir(parents=True, exist_ok=True)
-    newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}.png"), format="png", dpi = (300,300))
+    newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}.png"), format="png", dpi = (300,300), optimize= optimize_pngs)
     
     # Save final Card as Base64 String
     with BytesIO() as image_binary:
@@ -281,8 +280,8 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
     
     newCardBackground.close()
 
-    tmp_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), myCard.cardset, myCard.lang, "cropped", myCard.filename)
-    Path(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), myCard.cardset, myCard.lang, "cropped")).mkdir(parents=True, exist_ok=True)
+    tmp_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), "cropped", str(myCard.image_path))
+    Path(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), "cropped")).mkdir(parents=True, exist_ok=True)
     final_card_without_sage_area.save(tmp_path, format="png", dpi = (300,300))
     final_card_without_sage_area.close()
 
@@ -324,7 +323,7 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
 
     # Paste the frontImage at (width, height)
     card_backup_background.paste(clean_card, (x_pos, y_pos), clean_card)
-    card_backup_background.save(tmp_path,format="png", dpi = (300,300))
+    card_backup_background.save(tmp_path,format="png", dpi = (300,300), optimize= optimize_pngs)
 
     # Save cropped final Card as Base64 String
     with BytesIO() as image_binary:
@@ -596,8 +595,8 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     # Save the final card
     card_folder = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), f"{myCard.cardset}", f"{myCard.lang}")
     Path(card_folder).mkdir(parents=True, exist_ok=True)
-    newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}.png"), format="png", dpi = (300,300))
-    
+    newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}.png"), format="png", dpi = (300,300), optimize= optimize_pngs)
+
     # Save final Card as Base64 String
     with BytesIO() as image_binary:
         newCardBackground.save(image_binary,format="png", dpi = (300,300))
@@ -629,9 +628,9 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     final_card_without_sage_area = newCardBackground.crop((left, top, right, bottom))
     
     newCardBackground.close()
-
-    tmp_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), "{}/{}/cropped/{}.png".format(myCard.cardset,myCard.lang, myCard.filename))
-    Path(os.getenv('CARD_OUTPUT_FOLDER') + "/{}/{}/cropped/".format(myCard.cardset,myCard.lang)).mkdir(parents=True, exist_ok=True)
+    
+    tmp_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), "cropped", str(myCard.image_path))
+    Path(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang))).mkdir(parents=True, exist_ok=True)
     final_card_without_sage_area.save(tmp_path, format="png", dpi = (300,300))
     final_card_without_sage_area.close()
 
@@ -673,7 +672,7 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
 
     # Paste the frontImage at (width, height)
     card_backup_background.paste(clean_card, (x_pos, y_pos), clean_card)
-    card_backup_background.save(tmp_path,format="png", dpi = (300,300))
+    card_backup_background.save(tmp_path,format="png", dpi = (300,300), optimize= optimize_pngs)
 
     # Save cropped final Card as Base64 String
     with BytesIO() as image_binary:
