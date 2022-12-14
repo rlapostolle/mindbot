@@ -15,13 +15,6 @@ description_font = None
 quote_font = None
 card_key_font_18 = None
 power_font = None
-trigger_words_from_mindbug = (  "Play:", "Ausspielen:",
-                                "Attack:", "Angreifen:",
-                                "Defeat:","Besiegt:",
-                                "Block:", "Blocken:",
-                                "Unblocked:", "Ungeblockt:"
-                                "Draw:", "Ziehen:"
-                                )
 
 #region HELPER FUNC
 def LoadingCardFrames():
@@ -92,15 +85,6 @@ def text_wrap(text, font, max_width):
                     line = words[i]
                     i += 1
                 lines.append(line)
-
-            # A try to put Triggerwords in a new line
-            # inserts = {}
-            # for index_from_line in range(len(lines)):
-            #     tmp = lines[index_from_line].split(":")
-            #     inserts.update(index_from_line, tmp)
-            
-            # for key in inserts:
-            #     lines.insert(key, insert[key])
 
         return lines
 
@@ -501,9 +485,10 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
             if (i != 0):
                 position_of_text_end_in_y += 40
 
-            trigger_word = line.split(" ")[0]
+            isTriggerAvailable = len(line.split(":")) == 2
+            if isTriggerAvailable:
+                trigger_word = line.split(":")[0] + ":"
 
-            if trigger_word in trigger_words_from_mindbug:
                 line_length = description_font.getlength(line)
                 trigger_word_length = trigger_and_capabilites_font.getlength(trigger_word)
                 x_pos_trigger = newCardBackground.width//2 - line_length//2 + trigger_word_length//2
