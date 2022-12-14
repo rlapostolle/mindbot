@@ -70,6 +70,8 @@ class embeddata:
 		self.language = embedFields["fields"][7]["value"]
 		self.filename = embedFields["fields"][8]["value"]
 		self.override = embedFields["fields"][9]["value"]
+		self.threeDEffect = embedFields["fields"][10]["value"]
+
 #endregion
 
 #region UI STUFF
@@ -105,6 +107,7 @@ class EditCardData(ui.Modal, title='Edit Card Name'):
 		myEmbed.add_field(name="Language", value=data.language, inline=False) # Index 7
 		myEmbed.add_field(name="Filename", value=str(data.filename), inline=False) # Index 8
 		myEmbed.add_field(name="Override", value=str(data.override), inline=False) # Index 9
+		myEmbed.add_field(name="3D-Effect", value=str(data.threeDEffect), inline=False) # Index 10
 		myEmbed.set_footer(text="mindbug.me")
 	
 		await interaction.followup.send(embed = myEmbed, view = EditMenu(), ephemeral=True)
@@ -138,6 +141,7 @@ class EditCardMetaData(ui.Modal, title='Edit Card Name'):
 		myEmbed.add_field(name="Language", value=self.languageInput.value.strip(), inline=False) # Index 7
 		myEmbed.add_field(name="Filename", value=str(data.filename), inline=False) # Index 8
 		myEmbed.add_field(name="Override", value=str(data.override), inline=False) # Index 9	
+		myEmbed.add_field(name="3D-Effect", value=str(data.threeDEffect), inline=False) # Index 10
 		myEmbed.set_footer(text="http://mindbug.me")	
 	
 		await interaction.followup.send(embed = myEmbed, view = EditMenu(), ephemeral=True)
@@ -145,34 +149,32 @@ class EditCardMetaData(ui.Modal, title='Edit Card Name'):
 class EditMenu(discord.ui.View):
 	def __init__(self):
 		super().__init__(timeout=None)
-
-	@discord.ui.button(custom_id = "EditCardDataButton",label="Data" ,emoji="✏️", style=discord.ButtonStyle.gray, row=0)
-	async def editCardData(self, interaction: discord.Interaction, button: discord.ui.Button):
-		await interaction.response.send_modal(EditCardData(interaction=interaction))
-
-	@discord.ui.button(custom_id = "EditCardMetaDataButton",label="Meta" ,emoji="✏️", style=discord.ButtonStyle.gray, row=0)
-	async def editCardMeta(self, interaction: discord.Interaction, button: discord.ui.Button):
-		await interaction.response.send_modal(EditCardMetaData(interaction=interaction))
-
-	@discord.ui.button(custom_id = "PreviewButton",label="Preview",emoji="🖼️", style=discord.ButtonStyle.red,row=2)
-	async def previewCard(self, interaction: discord.Interaction, button: discord.ui.Button):
-		
+	
+	async def GeneratePreview(self, interaction, wich3DMode = 0):
 		await interaction.response.defer(ephemeral=True, thinking=True)
 		# Update the Mindbug-Card
 		with BytesIO() as image_binary:
 			data = embeddata(interaction)
 
+			if (wich3DMode == 0):
+				data.threeDEffect = "0"
+			elif (wich3DMode == 1):
+				data.threeDEffect = "1"
+			elif (wich3DMode == 2):
+				data.threeDEffect = "2"
+
 			finalCardAsImage, finalCardObj = cardgenerator.CreateACreatureCard(
-												artwork_filename = data.filename,
-												uid_from_set=data.cardnumber,
-												lang = data.language,
-												name = data.name,
-												power = data.power,
-												keywords = data.capabilities if (data.capabilities  != "?" ) else "",
-												effect = data.effect if (data.effect  != "?" ) else "",
-												quote = data.quote if (data.quote  != "?" ) else "",
-												cardset=data.setname
-												)
+													artwork_filename = data.filename,
+													uid_from_set=data.cardnumber,
+													lang = data.language,
+													name = data.name,
+													power = data.power,
+													keywords = data.capabilities if (data.capabilities  != "?" ) else "",
+													effect = data.effect if (data.effect  != "?" ) else "",
+													quote = data.quote if (data.quote  != "?" ) else "",
+													cardset=data.setname,
+													use_3D_effect = data.threeDEffect
+													)
 			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300), optimize= True)
 			image_binary.seek(0)
 
@@ -188,10 +190,31 @@ class EditMenu(discord.ui.View):
 			myEmbed.add_field(name="Language", value=data.language, inline=False) # Index 7
 			myEmbed.add_field(name="Filename", value=str(data.filename), inline=False) # Index 8
 			myEmbed.add_field(name="Override", value=str(data.override), inline=False) # Index 9
+			myEmbed.add_field(name="3D-Effect", value=str(data.threeDEffect), inline=False) # Index 10
 			myEmbed.set_footer(text="mindbug.me")
-		
+			
 			await interaction.followup.send(embed = myEmbed, view = EditMenu(), file=discord.File(fp=image_binary, filename=data.filename), ephemeral=True)
 
+	@discord.ui.button(custom_id = "EditCardDataButton",label="Data" ,emoji="✏️", style=discord.ButtonStyle.gray, row=0)
+	async def editCardData(self, interaction: discord.Interaction, button: discord.ui.Button):
+		await interaction.response.send_modal(EditCardData(interaction=interaction))
+
+	@discord.ui.button(custom_id = "EditCardMetaDataButton",label="Meta" ,emoji="✏️", style=discord.ButtonStyle.gray, row=0)
+	async def editCardMeta(self, interaction: discord.Interaction, button: discord.ui.Button):
+		await interaction.response.send_modal(EditCardMetaData(interaction=interaction))
+
+	@discord.ui.button(custom_id = "EditCard3DEffectButton_UpperHalf",label="3D Effect - 1/2" ,emoji="🚧", style=discord.ButtonStyle.gray, row=0)
+	async def editCard3DEffectUpperHalf(self, interaction: discord.Interaction, button: discord.ui.Button):
+		await self.GeneratePreview(interaction, 1)
+
+	@discord.ui.button(custom_id = "EditCard3DEffectButton_UpperRigthQuater",label="3D Effect - 1/4" ,emoji="🚧", style=discord.ButtonStyle.gray, row=0)
+	async def editCard3DEffectUpperRigthQuater(self, interaction: discord.Interaction, button: discord.ui.Button):
+		await self.GeneratePreview(interaction, 2)
+
+	@discord.ui.button(custom_id = "PreviewButton",label="Preview",emoji="🖼️", style=discord.ButtonStyle.red,row=2)
+	async def previewCard(self, interaction: discord.Interaction, button: discord.ui.Button):
+		await self.GeneratePreview(interaction, 0)
+ 
 	@discord.ui.button(custom_id = "ReleaseButton",label="", emoji="✔️",style=discord.ButtonStyle.green ,row=2)
 	async def releaseCard(self, interaction: discord.Interaction, button: discord.ui.Button):
 		
@@ -223,7 +246,8 @@ class EditMenu(discord.ui.View):
 												keywords = data.capabilities if (data.capabilities  != "?" ) else "",
 												effect = data.effect if (data.effect  != "?" ) else "",
 												quote = data.quote if (data.quote  != "?" ) else "",
-												cardset = data.setname
+												cardset = data.setname,
+												use_3D_effect=data.threeDEffect
 												)
 			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300), optimize= True)
 			image_binary.seek(0)
@@ -382,7 +406,8 @@ async def createcreaturecard(interaction: discord.Interaction, artwork : discord
 			myEmbed.add_field(name="Name from Set", value="default", inline=False) # Index 6
 			myEmbed.add_field(name="Language", value="en", inline=False) # Index 7
 			myEmbed.add_field(name="Filename", value=f"{artwork_filename}", inline=False) # Index 8
-			myEmbed.add_field(name="Override", value=f"{override}", inline=False) # Index 8
+			myEmbed.add_field(name="Override", value=f"{override}", inline=False) # Index 9
+			myEmbed.add_field(name="3D-Effect", value="0", inline=False) # Index 10
 			myEmbed.set_footer(text="http://mindbug.me")
 			await interaction.followup.send(embed=myEmbed, view=EditMenu())
 		else:
