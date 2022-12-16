@@ -25,6 +25,14 @@ trigger_words_from_mindbug = (  "Play:", "Ausspielen:",
                                 )
 
 #region HELPER FUNC
+def LoadingModelforRembg():
+    """Downloading the necessary Model to remove the Background from Images on first start.
+    """
+    print("Downloading Model, when its missing:")
+    test_Img = remove(Image.open(os.path.join(__location__, "assets/test_img.png")))
+    test_Img.save(os.path.join(__location__, "assets/test_img_clean.png"))
+    print("Downloading Model, when its missing: SUCESSFULL.")
+
 def LoadingCardFrames():
     print("Loading card frames:")
     # Open frame for normal card and Convert image to RGBA

@@ -429,6 +429,9 @@ async def on_ready():
 	# Load the Fonts from the assets-Folder
 	cardgenerator.name_font_52, cardgenerator.name_font_20, cardgenerator.trigger_and_capabilites_font, cardgenerator.description_font, cardgenerator.quote_font, cardgenerator.card_key_font_18, cardgenerator.power_font = cardgenerator.LoadingFonts()
 
+	# Download Model for 3D-Effect
+	cardgenerator.LoadingModelforRembg()
+
 	print("Sync commands on all discord server...")
 	#Sync the commands with all server
 	await tree.sync()
