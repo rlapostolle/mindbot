@@ -3,6 +3,7 @@ from io import BytesIO
 from PIL import Image, ImageFont, ImageDraw, ImageFilter, ImageOps
 from pathlib import Path
 from models import Card
+from rembg import remove
 
 optimize_pngs:bool = True
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -18,6 +19,14 @@ card_key_font_18 = None
 power_font = None
 
 #region HELPER FUNC
+def LoadingModelforRembg():
+    """Downloading the necessary Model to remove the Background from Images on first start.
+    """
+    print("Downloading Model, when its missing:")
+    test_Img = remove(Image.open(os.path.join(__location__, "assets/test_img.png")))
+    test_Img.save(os.path.join(__location__, "assets/test_img_clean.png"))
+    print("Downloading Model, when its missing: SUCESSFULL.")
+
 def LoadingCardFrames():
     print("Loading card frames:")
     # Open frame for normal card and Convert image to RGBA
@@ -325,7 +334,7 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
 
 # This Function Create a Card from a given File
 # TODO: Create a Edit Function wich use a Base64 String
-def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from_set: str, name: str, power: str, keywords:str = None, effect:str = None, quote:str= None):
+def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from_set: str, name: str, power: str, keywords:str = None, effect:str = None, quote:str= None, use_3D_effect:str = None):
    
     pathname, extension = os.path.splitext(artwork_filename)	
 
@@ -338,6 +347,9 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     if (quote is None):
         quote = ""
 
+    if (use_3D_effect is None or use_3D_effect == "0"):
+        use_3D_effect = ""
+
     myCard = Card(
         uid_from_set=uid_from_set,
         lang=lang,
@@ -348,7 +360,8 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
         quote = quote,
         image_path=artwork_filename,
         filename=name,
-        cardset=cardset
+        cardset=cardset,
+        use_3d_effect = use_3D_effect
     )
 
     print(f"Cooking Creature '{myCard.name}'")
@@ -391,9 +404,9 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     newCardBackground.paste(creature_image, (x_pos, y_pos), creature_image)
 
     # For the Future, requires "from rembg import remove"
-    # creature_image_clean = None
-    # if(myCard.use_3d_effect != ""):
-    #     creature_image_clean = remove(creature_image.copy()) # With this copy, we can build a depth-effect  
+    creature_image_clean = None
+    if(myCard.use_3d_effect != ""):
+        creature_image_clean = remove(creature_image.copy()) # With this copy, we can build a depth-effect  
 
     # FRAME
     # Calculate width to be at the center
@@ -420,33 +433,31 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     card_editable.text((145,125), myCard.power, fill="white", font=power_font,anchor="mm" )
 
     #region TEST FOR 3D DEPTH-EFFECT, HIDDEN PARTS OF THE NAME FIELD WITH CREATURE BY GIVEN BOOL
-    # For the Future, when we can Edit a card
-    # if(myCard.use_3d_effect != ""):
-    #     # 1. CROP THE MONSTER 1/4 or 1/2
-    #     if(myCard.use_3d_effect == "1"):    
-    #         left = 0
-    #         top = 0
-    #         right = creature_image_clean.size[0]
-    #         bottom = creature_image_clean.size[1]//2
-    #         creature_image_clean = creature_image_clean.crop((left, top, right, bottom)).resize((744, 1038//2),resample= Image.Resampling.BICUBIC)
+    if(myCard.use_3d_effect != ""):
+        # 1. CROP THE MONSTER 1/4 or 1/2
+        if(myCard.use_3d_effect == "1"):    
+            left = 0
+            top = 0
+            right = creature_image_clean.size[0]
+            bottom = creature_image_clean.size[1]//2
+            creature_image_clean = creature_image_clean.crop((left, top, right, bottom)).resize((744, 1038//2),resample= Image.Resampling.BICUBIC)
 
-    #         # 2. PASTE THE new IMAGE
-    #         x = (816-744)//2 #newCardBackground.size[0]//2 
-    #         y = y_pos + (1110-1038)//2
+            # 2. PASTE THE new IMAGE
+            x = (816-744)//2 #newCardBackground.size[0]//2 
+            y = y_pos + (1110-1038)//2
 
-    #     elif (myCard.use_3d_effect == "2"):    
-    #         left = creature_image_clean.size[0]//2
-    #         top = 0
-    #         right = creature_image_clean.size[0]
-    #         bottom = creature_image_clean.size[1]//2
-    #         creature_image_clean = creature_image_clean.crop((left, top, right, bottom)).resize((744//2, 1038//2),resample= Image.Resampling.BICUBIC)
+        elif (myCard.use_3d_effect == "2"):    
+            left = creature_image_clean.size[0]//2
+            top = 0
+            right = creature_image_clean.size[0]
+            bottom = creature_image_clean.size[1]//2
+            creature_image_clean = creature_image_clean.crop((left, top, right, bottom)).resize((744//2, 1038//2),resample= Image.Resampling.BICUBIC)
 
-    #         # 2. PASTE THE new IMAGE
-    #         x = newCardBackground.size[0]//2 
-    #         y = y_pos + (1110-1038)//2
+            # 2. PASTE THE new IMAGE
+            x = newCardBackground.size[0]//2 
+            y = y_pos + (1110-1038)//2
         
-    #     if( not playtestMode):
-    #         newCardBackground.paste(creature_image_clean,(x,y), creature_image_clean)
+        newCardBackground.paste(creature_image_clean,(x,y), creature_image_clean)
     #endregion
 
 
@@ -454,13 +465,13 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     max_text_area_width_on_card = card_frame_normal.width - 220
 
     # Keywords
-    position_of_text_end_in_y = newCardBackground.height/2+255
+    position_of_text_end_in_y = newCardBackground.height/2+275
     capabilities = text_wrap(myCard.keywords.upper(), trigger_and_capabilites_font,max_text_area_width_on_card )
     i = 0
     for line in capabilities:
         # Calculate the new Text position
         if (i != 0):
-            position_of_text_end_in_y += 40
+            position_of_text_end_in_y += 50
 
         card_editable.text((newCardBackground.width/2,position_of_text_end_in_y), line, fill="white", font=trigger_and_capabilites_font, anchor="mm" )
         i  += 1
@@ -468,10 +479,10 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     #region DESCRIPTION    
     if (capabilities[0] != ""):
         # Add Offset between Keywords and Description
-        position_of_text_end_in_y += 50
+        position_of_text_end_in_y += 60
     else:
         # Offset between Textboxborder and Descripton
-        position_of_text_end_in_y += 40
+        position_of_text_end_in_y += 50
 
     # Split the description to # to detect the triggers
     triggers = cleanup_triggers(myCard.effect.split("#"))
@@ -480,7 +491,7 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     for triggersentence in triggers:
 
         if more_than_one_trigger:
-            position_of_text_end_in_y += 40
+            position_of_text_end_in_y += 50
 
         descriptionlines = text_wrap(triggersentence,description_font, max_text_area_width_on_card)
         # IDEA:
@@ -491,7 +502,7 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
         for line in descriptionlines:
             # Calculate the new Text position
             if (i != 0):
-                position_of_text_end_in_y += 40
+                position_of_text_end_in_y += 50
 
             isTriggerAvailable = len(line.split(":")) == 2
             if isTriggerAvailable:
@@ -517,9 +528,9 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
 
     #region QUOATES
     if (myCard.keywords != "" and myCard.effect != ""):
-        position_of_text_end_in_y += 50
+        position_of_text_end_in_y += 60
     else:
-        position_of_text_end_in_y += 45
+        position_of_text_end_in_y += 50
 
     quotes = text_wrap(myCard.quote, quote_font, max_text_area_width_on_card)
 

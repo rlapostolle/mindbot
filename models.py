@@ -2,7 +2,7 @@ import os
 
 # This needs to be redesigned, it is only for the first test
 class Card():
-    def __init__(self, uid_from_set, lang, name, power, keywords, effect, quote, image_path, filename, cardset = ""): 
+    def __init__(self, uid_from_set, lang, name, power, keywords, effect, quote, image_path, filename, cardset = "", use_3d_effect = ""): 
         self.uid_from_set = uid_from_set # 0
         self.lang = lang # 1
         self.name = name # 3
@@ -13,6 +13,7 @@ class Card():
         self.image_path = image_path # 6
         self.filename = filename # 7
         self.cardset = cardset #8
+        self.use_3d_effect = use_3d_effect
         #Image data
         self.cropped_final_card_base64 = ""
         self.final_card_base_64 = ""
