@@ -80,7 +80,7 @@ class EditCardData(ui.Modal, title='Edit Card Name'):
 	def __init__(self, interaction: discord.Interaction):
 		super().__init__()
 		data = embeddata(interaction)
-		self.nameInput = ui.TextInput(label='Name', default=data.name if data.name != "?" else "", placeholder="Sirus Snape", required=True, min_length=1, max_length=20)
+		self.nameInput = ui.TextInput(label='Name', default=data.name if data.name != "?" else "", placeholder="Sirus Snape", required=True, min_length=1, max_length=24)
 		self.add_item(self.nameInput)
 		self.powerInput = ui.TextInput(label='Power', default=data.power if data.power != "?" else "", placeholder="9", required=True, min_length=1, max_length=2)
 		self.add_item(self.powerInput)
@@ -427,7 +427,7 @@ async def on_ready():
 	cardgenerator.card_frame_normal, cardgenerator.card_frame_mindbug = cardgenerator.LoadingCardFrames()
 
 	# Load the Fonts from the assets-Folder
-	cardgenerator.name_font_52, cardgenerator.name_font_20, cardgenerator.trigger_and_capabilites_font, cardgenerator.description_font, cardgenerator.quote_font, cardgenerator.card_key_font_18, cardgenerator.power_font = cardgenerator.LoadingFonts()
+	cardgenerator.name_font_52, cardgenerator.name_font_42, cardgenerator.name_font_20, cardgenerator.trigger_and_capabilites_font, cardgenerator.description_font, cardgenerator.quote_font, cardgenerator.card_key_font_18, cardgenerator.power_font = cardgenerator.LoadingFonts()
 
 	# Download Model for 3D-Effect
 	cardgenerator.LoadingModelforRembg()

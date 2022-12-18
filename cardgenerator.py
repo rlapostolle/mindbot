@@ -10,19 +10,13 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 card_frame_normal = None
 card_frame_mindbug = None
 name_font_52 = None
+name_font_42 = None
 name_font_20 = None
 trigger_and_capabilites_font = None
 description_font = None
 quote_font = None
 card_key_font_18 = None
 power_font = None
-trigger_words_from_mindbug = (  "Play:", "Ausspielen:",
-                                "Attack:", "Angreifen:",
-                                "Defeat:","Besiegt:",
-                                "Block:", "Blocken:",
-                                "Unblocked:", "Ungeblockt:"
-                                "Draw:", "Ziehen:"
-                                )
 
 #region HELPER FUNC
 def LoadingModelforRembg():
@@ -50,6 +44,7 @@ def LoadingFonts():
     print("Loading card fonts:")
     fontPath = __location__ +"/assets/ZalamanderCaps-Extrabold.otf"
     name_font_52 = ImageFont.truetype(fontPath,52)
+    name_font_42 = ImageFont.truetype(fontPath,42)
     name_font_20 = ImageFont.truetype(fontPath,20)
 
     trigger_and_capabilites_font = ImageFont.truetype(__location__ + "/assets/Brandon_blk.otf",32)
@@ -62,7 +57,7 @@ def LoadingFonts():
 
     power_font = ImageFont.truetype( __location__ + "/assets/Graphit-Black.otf" ,76)
     print("Loading card fonts: SUCESSFULL.")
-    return name_font_52, name_font_20, trigger_and_capabilites_font, description_font, quote_font, card_key_font_18, power_font
+    return name_font_52, name_font_42, name_font_20, trigger_and_capabilites_font, description_font, quote_font, card_key_font_18, power_font
 
 def text_wrap(text, font, max_width):
         """Wrap text base on specified width. 
@@ -102,15 +97,6 @@ def text_wrap(text, font, max_width):
                     i += 1
                 lines.append(line)
 
-            # A try to put Triggerwords in a new line
-            # inserts = {}
-            # for index_from_line in range(len(lines)):
-            #     tmp = lines[index_from_line].split(":")
-            #     inserts.update(index_from_line, tmp)
-            
-            # for key in inserts:
-            #     lines.insert(key, insert[key])
-
         return lines
 
 def cleanup_triggers(myTriggers):    
@@ -132,7 +118,7 @@ def cleanup_triggers(myTriggers):
     myTriggers = [item.strip() for item in myTriggers]
         
     return myTriggers
-
+#endregion
 
 # TODO: Safe all Input Images (Artwork, Set-Icon) as Base64 and use it in this Function
 def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_set: str):
@@ -342,6 +328,7 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
         myCard.cropped_final_card_base64 = image_as_base64
 
     clean_card.close()
+    #endregion
 
     return card_backup_background, myCard
 
@@ -435,7 +422,12 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     card_editable = ImageDraw.Draw(newCardBackground)
     
     # Create the Name
-    card_editable.text((240,138), myCard.name.upper(), fill="white", font=name_font_52, anchor="lm" )
+    # If normal Name Font Size greater then Namefield use a smaller Font Size.
+    name_length = name_font_52.getlength(myCard.name.upper())
+    if (name_length <= card_frame_normal.width - 350):
+        card_editable.text((240,138), myCard.name.upper(), fill="white", font=name_font_52, anchor="lm" )
+    else:
+        card_editable.text((240,138), myCard.name.upper(), fill="white", font=name_font_42, anchor="lm" )
 
     # Power
     card_editable.text((145,125), myCard.power, fill="white", font=power_font,anchor="mm" )
@@ -465,7 +457,6 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
             x = newCardBackground.size[0]//2 
             y = y_pos + (1110-1038)//2
         
-        # if( not playtestMode):
         newCardBackground.paste(creature_image_clean,(x,y), creature_image_clean)
     #endregion
 
@@ -513,9 +504,10 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
             if (i != 0):
                 position_of_text_end_in_y += 50
 
-            trigger_word = line.split(" ")[0]
+            isTriggerAvailable = len(line.split(":")) == 2
+            if isTriggerAvailable:
+                trigger_word = line.split(":")[0] + ":"
 
-            if trigger_word in trigger_words_from_mindbug:
                 line_length = description_font.getlength(line)
                 trigger_word_length = trigger_and_capabilites_font.getlength(trigger_word)
                 x_pos_trigger = newCardBackground.width//2 - line_length//2 + trigger_word_length//2
@@ -692,6 +684,8 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
         image_binary.seek(0)
         image_as_base64 =  base64.b64encode(image_binary.getvalue()).decode()
         myCard.final_card_base_64 = image_as_base64
+
+    #endregion
 
     clean_card.close()
 
