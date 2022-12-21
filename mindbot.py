@@ -13,7 +13,7 @@ from io import BytesIO
 from discord import app_commands, ui
 from pymongo import MongoClient, ASCENDING
 
-CARD_GENERATOR_APP_NAME="Card Generator 0.0.2"
+CARD_GENERATOR_APP_NAME="Card Generator 0.0.3"
 BUG_TRACKING_URL="https://github.com/rlapostolle/mindbot/issues"
 
 #region DB STUFF
@@ -368,7 +368,7 @@ async def createmindbugcard(interaction: discord.InteractionMessage, artwork : d
 
 # First only an embed, the we can edit the data, add a preview Button and a release button
 @tree.command(name = "createacreature", description = "Create a Creature Card with a given Artwork.")
-async def createcreaturecard(interaction: discord.Interaction, artwork : discord.Attachment, override:bool = False ):
+async def createcreaturecard(interaction: discord.Interaction, artwork : discord.Attachment):
 	try:
 		if (artwork):
 			# The first answer must be given within 3sec.
@@ -406,7 +406,7 @@ async def createcreaturecard(interaction: discord.Interaction, artwork : discord
 			myEmbed.add_field(name="Name from Set", value="default", inline=False) # Index 6
 			myEmbed.add_field(name="Language", value="en", inline=False) # Index 7
 			myEmbed.add_field(name="Filename", value=f"{artwork_filename}", inline=False) # Index 8
-			myEmbed.add_field(name="Override", value=f"{override}", inline=False) # Index 9
+			myEmbed.add_field(name="Override", value=f"{False}", inline=False) # Index 9
 			myEmbed.add_field(name="3D-Effect", value="0", inline=False) # Index 10
 			myEmbed.set_footer(text="http://mindbug.me")
 			await interaction.followup.send(embed=myEmbed, view=EditMenu())
@@ -416,7 +416,46 @@ async def createcreaturecard(interaction: discord.Interaction, artwork : discord
 		print("Error on Create Crature Card:" + str(e))
 		await interaction.followup.send(f"I choked and had to abort.")
 
+@tree.command(name = "editcreature", description = "Edit a Creature Card.")
+async def editcreaturecard(interaction: discord.Interaction, name: str, cardset:str ):
+	try:
+		if (name):
+			userid = interaction.user.id
 
+			# The first answer must be given within 3sec.
+			await interaction.response.defer(ephemeral=True, thinking=True)
+			# From now on we have 15 minutes
+			
+			#Get all cards from user
+			db = mongodb["cardcreator"]
+			card = db["customcreatures"].find_one(filter={ "user_id": userid, "name": name ,"cardset": cardset})
+
+			# Create the Mindbug-Card
+			myEmbed = discord.Embed(title=CARD_GENERATOR_APP_NAME, url=BUG_TRACKING_URL,color = discord.Color.random(), description=embed_description)
+			myEmbed.add_field(name="Name", value="{}".format(card["name"]), inline=True) # Index 0
+			myEmbed.add_field(name="Power", value="{}".format(card["power"]), inline=False) # Index 1
+			myEmbed.add_field(name="Capabilities", value="{}".format(card["keywords"] if (card["keywords"] != "") else "?"), inline=False) # Index 2
+			myEmbed.add_field(name="Effect", value= "{}".format(card["effect"] if (card["effect"] != "") else "?"), inline=False) # Index 3
+			myEmbed.add_field(name="Quote", value= "{}".format(card["quote"] if (card["quote"] != "") else "?"), inline=False) # Index 4
+			myEmbed.add_field(name="Cardnumber in Set", value="{}".format(card["uid_from_set"]), inline=False) # Index 5
+			myEmbed.add_field(name="Name from Set", value="{}".format(card["cardset"]), inline=False) # Index 6
+			myEmbed.add_field(name="Language", value="{}".format(card["lang"]), inline=False) # Index 7
+			myEmbed.add_field(name="Filename", value="{}".format(card["filename"]), inline=False) # Index 8
+			myEmbed.add_field(name="Override", value=f"{True}", inline=False) # Index 9
+
+			# This is necessary, because this field is missing by old cards in the db
+			if "use_3d_effect" in card:
+				myEmbed.add_field(name="3D-Effect", value="{}".format(card["use_3d_effect"] if (card["use_3d_effect"] != "") else "0"), inline=False) # Index 10
+			else:
+				myEmbed.add_field(name="3D-Effect", value="0", inline=False) # Index 10
+
+			myEmbed.set_footer(text="http://mindbug.me")
+			await interaction.followup.send(embed=myEmbed, view=EditMenu())
+		else:
+			await interaction.response.send_message(f'No Card found')
+	except Exception as e:
+		print("Error on Edit Creature Card:" + str(e))
+		await interaction.followup.send(f"I choked and had to abort.")
 
 
 @client.event
