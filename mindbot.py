@@ -295,7 +295,7 @@ async def randomcustom(interaction: discord.Interaction, user:str = None):
 		c = Card(**card[0])
 		img_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), c.relativePath())
 		if(os.path.exists(img_path)):
-			await interaction.followup.send(file=discord.File(fp=img_path))
+			await interaction.followup.send("Card designed by <@" + c.userid + "> in set " + c.cardset, file=discord.File(fp=img_path))
 		else:
 			print(f"Creature image unavailable: {img_path}")
 			await interaction.followup.send("Sorry, there was an error while reading card...")
@@ -315,7 +315,7 @@ async def customcards(interaction: discord.Interaction, user:str = None):
 	db = mongodb["cardcreator"]
 	cards = db["customcreatures"].find(filter={ "user_id": userid })
 
-	text = ""
+	text = "List of custom cards designed by <@" + userid + ">:"
 	for card in cards:
 		text += card["name"] + " [" + card["lang"] + "] from cardset '" + card["cardset"] + "'\n"
 	if text == "":
