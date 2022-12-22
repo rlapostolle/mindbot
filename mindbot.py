@@ -8,7 +8,7 @@ import os
 import datetime
 import discord
 import cardgenerator
-from models import Card
+from models import Card, ThreeDEffectKind
 from io import BytesIO
 from discord import app_commands, ui
 from pymongo import MongoClient, ASCENDING
@@ -156,12 +156,10 @@ class EditMenu(discord.ui.View):
 		with BytesIO() as image_binary:
 			data = embeddata(interaction)
 
-			if (wich3DMode == 0):
-				data.threeDEffect = "0"
-			elif (wich3DMode == 1):
-				data.threeDEffect = "1"
-			elif (wich3DMode == 2):
-				data.threeDEffect = "2"
+			if wich3DMode >= len(ThreeDEffectKind):
+				data.threeDEffect = ThreeDEffectKind.NONE
+			else:
+				data.threeDEffect = wich3DMode
 
 			finalCardAsImage, finalCardObj = cardgenerator.CreateACreatureCard(
 													artwork_filename = data.filename,
@@ -173,7 +171,7 @@ class EditMenu(discord.ui.View):
 													effect = data.effect if (data.effect  != "?" ) else "",
 													quote = data.quote if (data.quote  != "?" ) else "",
 													cardset=data.setname,
-													use_3D_effect = data.threeDEffect
+													use_3D_effect = int(data.threeDEffect)
 													)
 			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300), optimize= True)
 			image_binary.seek(0)
@@ -247,7 +245,7 @@ class EditMenu(discord.ui.View):
 												effect = data.effect if (data.effect  != "?" ) else "",
 												quote = data.quote if (data.quote  != "?" ) else "",
 												cardset = data.setname,
-												use_3D_effect=data.threeDEffect
+												use_3D_effect=int(data.threeDEffect)
 												)
 			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300), optimize= True)
 			image_binary.seek(0)
@@ -317,7 +315,8 @@ async def customcards(interaction: discord.Interaction, user:str = None):
 
 	text = "List of custom cards designed by <@" + userid + ">:"
 	for card in cards:
-		text += card["name"] + " [" + card["lang"] + "] from cardset '" + card["cardset"] + "'\n"
+		c = Card(**card)
+		text += c.name + " [" + c.lang + "] from cardset '" + c.cardset + "'\n"
 	if text == "":
 		await interaction.followup.send("No record available.")
 	else:
