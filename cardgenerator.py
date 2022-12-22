@@ -2,7 +2,7 @@ import os, cv2, base64
 from io import BytesIO
 from PIL import Image, ImageFont, ImageDraw, ImageFilter, ImageOps
 from pathlib import Path
-from models import Card
+from models import Card, ThreeDEffectKind
 from rembg import remove
 
 optimize_pngs:bool = True
@@ -334,7 +334,7 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
 
 # This Function Create a Card from a given File
 # TODO: Create a Edit Function wich use a Base64 String
-def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from_set: str, name: str, power: str, keywords:str = None, effect:str = None, quote:str= None, use_3D_effect:str = None):
+def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from_set: str, name: str, power: str, keywords:str = None, effect:str = None, quote:str= None, use_3D_effect:ThreeDEffectKind = None):
    
     pathname, extension = os.path.splitext(artwork_filename)	
 
@@ -346,9 +346,6 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
 
     if (quote is None):
         quote = ""
-
-    if (use_3D_effect is None or use_3D_effect == "0"):
-        use_3D_effect = ""
 
     myCard = Card(
         uid_from_set=uid_from_set,
@@ -405,7 +402,7 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
 
     # For the Future, requires "from rembg import remove"
     creature_image_clean = None
-    if(myCard.use_3d_effect != ""):
+    if(myCard.use_3d_effect != ThreeDEffectKind.NONE):
         creature_image_clean = remove(creature_image.copy()) # With this copy, we can build a depth-effect  
 
     # FRAME
@@ -433,9 +430,9 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     card_editable.text((145,125), myCard.power, fill="white", font=power_font,anchor="mm" )
 
     #region TEST FOR 3D DEPTH-EFFECT, HIDDEN PARTS OF THE NAME FIELD WITH CREATURE BY GIVEN BOOL
-    if(myCard.use_3d_effect != ""):
+    if(myCard.use_3d_effect != ThreeDEffectKind.NONE):
         # 1. CROP THE MONSTER 1/4 or 1/2
-        if(myCard.use_3d_effect == "1"):    
+        if(myCard.use_3d_effect == ThreeDEffectKind.TOPHALF):    
             left = 0
             top = 0
             right = creature_image_clean.size[0]
@@ -446,7 +443,7 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
             x = (816-744)//2 #newCardBackground.size[0]//2 
             y = y_pos + (1110-1038)//2
 
-        elif (myCard.use_3d_effect == "2"):    
+        elif (myCard.use_3d_effect == ThreeDEffectKind.TOPRIGHTHALF):    
             left = creature_image_clean.size[0]//2
             top = 0
             right = creature_image_clean.size[0]

@@ -1,8 +1,9 @@
 import os
+from enum import IntEnum
 
 # This needs to be redesigned, it is only for the first test
 class Card():
-    def __init__(self, uid_from_set, lang, name, power, keywords, effect, quote, image_path, filename, cardset = "", use_3d_effect = ""): 
+    def __init__(self, uid_from_set, lang, name, power, keywords, effect, quote, image_path, filename, cardset = "", use_3d_effect = 0): 
         self.uid_from_set = uid_from_set # 0
         self.lang = lang # 1
         self.name = name # 3
@@ -22,7 +23,12 @@ class Card():
 
     #Used to init from a db record
     def __init__(self, **args):
+        # added late in dev, force default value in case not present
+        self.use_3d_effect = 0
         self.__dict__.update(args)
+            
+
+
 
     def toDdObj(self):
         return {
@@ -35,8 +41,14 @@ class Card():
             'effect': self.effect, 
             'quote': self.quote,
             'image_path': self.image_path,
-            'filename':self.filename
+            'filename':self.filename,
+            'use_3d_effect':self.use_3d_effect
         }
 
     def relativePath(self):
         return os.path.join(f"{self.cardset}", f"{self.lang}", "cropped", f"{self.filename}.png")
+
+class ThreeDEffectKind(IntEnum):
+    NONE = 0
+    TOPHALF = 1
+    TOPRIGHTHALF = 2
