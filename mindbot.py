@@ -171,7 +171,8 @@ class EditMenu(discord.ui.View):
 													effect = data.effect if (data.effect  != "?" ) else "",
 													quote = data.quote if (data.quote  != "?" ) else "",
 													cardset=data.setname,
-													use_3D_effect = int(data.threeDEffect)
+													use_3D_effect = int(data.threeDEffect),
+													author=interaction.user.name 
 													)
 			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300), optimize= True)
 			image_binary.seek(0)
@@ -245,7 +246,8 @@ class EditMenu(discord.ui.View):
 												effect = data.effect if (data.effect  != "?" ) else "",
 												quote = data.quote if (data.quote  != "?" ) else "",
 												cardset = data.setname,
-												use_3D_effect=int(data.threeDEffect)
+												use_3D_effect=int(data.threeDEffect),
+												author=interaction.user.name 
 												)
 			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300), optimize= True)
 			image_binary.seek(0)
@@ -352,7 +354,7 @@ async def createmindbugcard(interaction: discord.InteractionMessage, artwork : d
 
 			# Create the Mindbug-Card
 			with BytesIO() as image_binary:
-				finalCardAsImage, finalCardObj = cardgenerator.CreateAMindbugCard(artwork_filename=artwork_filename, lang=lang, cardset=cardset, uid_from_set=uid_from_set )
+				finalCardAsImage, finalCardObj = cardgenerator.CreateAMindbugCard(artwork_filename=artwork_filename, lang=lang, cardset=cardset, uid_from_set=uid_from_set, author=interaction.user.name )
 				finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300))
 				image_binary.seek(0)
 				saveCardinDB(interaction, finalCardObj)
@@ -466,7 +468,7 @@ async def on_ready():
 
 	print("Loading assets...")
 	# Load the Cardframes from the assets-Folder
-	cardgenerator.card_frame_normal, cardgenerator.card_frame_mindbug = cardgenerator.LoadingCardFrames()
+	cardgenerator.card_frame_normal, cardgenerator.card_frame_mindbug ,cardgenerator.card_cut_marks, cardgenerator.card_cut_marks_inverted= cardgenerator.LoadingCardFrames()
 
 	# Load the Fonts from the assets-Folder
 	cardgenerator.name_font_52, cardgenerator.name_font_42, cardgenerator.name_font_20, cardgenerator.trigger_and_capabilites_font, cardgenerator.description_font, cardgenerator.quote_font, cardgenerator.card_key_font_18, cardgenerator.power_font = cardgenerator.LoadingFonts()
