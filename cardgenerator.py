@@ -9,6 +9,8 @@ optimize_pngs:bool = True
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 card_frame_normal = None
 card_frame_mindbug = None
+card_cut_marks = None
+card_cut_marks_inverted= None
 name_font_52 = None
 name_font_42 = None
 name_font_20 = None
@@ -19,6 +21,14 @@ card_key_font_18 = None
 power_font = None
 
 #region HELPER FUNC
+def InvertImgColor(img):
+    triggers,g,b,a = img.split()
+    rgb_image = Image.merge('RGB', (triggers,g,b))
+    inverted_image = ImageOps.invert(rgb_image)
+    r2,g2,b2 = inverted_image.split()
+    inverted_img = Image.merge('RGBA', (r2,g2,b2,a))
+    return inverted_img
+
 def LoadingModelforRembg():
     """Downloading the necessary Model to remove the Background from Images on first start.
     """
@@ -37,8 +47,17 @@ def LoadingCardFrames():
     card_frame_mindbug = Image.open(os.path.join(__location__, "assets/MindbugCardTemplate.png"))
     card_frame_mindbug = card_frame_mindbug.resize((816, 1110),resample= Image.Resampling.LANCZOS)
     card_frame_mindbug = card_frame_mindbug.convert("RGBA")
+
+    card_cut_marks = Image.open(os.path.join(__location__, "assets/CardCutMarks.png"))
+    card_cut_marks = card_cut_marks.resize((816, 1110),resample= Image.Resampling.LANCZOS)
+    card_cut_marks = card_cut_marks.convert("RGBA")
+
+    card_cut_marks_inverted = InvertImgColor(Image.open(os.path.join(__location__, "assets/CardCutMarks.png")))
+    card_cut_marks_inverted = card_cut_marks_inverted.resize((816, 1110),resample= Image.Resampling.LANCZOS)
+    card_cut_marks_inverted = card_cut_marks_inverted.convert("RGBA")
+
     print("Loading card frames: SUCESSFULL.")
-    return card_frame_normal, card_frame_mindbug
+    return card_frame_normal, card_frame_mindbug, card_cut_marks, card_cut_marks_inverted
 
 def LoadingFonts():
     print("Loading card fonts:")
@@ -121,9 +140,12 @@ def cleanup_triggers(myTriggers):
 #endregion
 
 # TODO: Safe all Input Images (Artwork, Set-Icon) as Base64 and use it in this Function
-def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_set: str):
+def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_set: str, author: str = None):
     print("Beam a Mindbug to the World.")
     
+    if (author is None):
+        author = ""
+
     pathname, extension = os.path.splitext(artwork_filename)	
     myCard = Card(
         uid_from_set=uid_from_set,
@@ -135,7 +157,8 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
         effect = "",
         quote = "",
         image_path=artwork_filename,
-        filename=pathname.split('/')[-1]
+        filename=pathname.split('/')[-1],
+        author = author
     )
 
     # Empty Card
@@ -218,24 +241,32 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
         # Add the Card-uid_from_set
         card_editable.text((x_pos + 15,y_pos), myCard.uid_from_set, fill="white", font=card_key_font_18,anchor="lm" , align="right")
         
+        # Add the Author 
+        if (myCard.author != ""):   
+            card_editable.text((120,y_pos), myCard.author, fill="white", font=card_key_font_18,anchor="lm" , align="left")
+
         if(set_logo_exist):
             # Convert the black into white
-            triggers,g,b,a = set_logo.split()
-            rgb_image = Image.merge('RGB', (triggers,g,b))
-            inverted_image = ImageOps.invert(rgb_image)
-            r2,g2,b2 = inverted_image.split()
-            inverted_set_logo = Image.merge('RGBA', (r2,g2,b2,a))
+            inverted_set_logo = InvertImgColor(set_logo)
             
             # Add the Logo
             newCardBackground.paste(inverted_set_logo, (int(x_pos - 15),int(y_pos - 12 )), inverted_set_logo)
 
+        newCardBackground.paste(card_cut_marks_inverted, ((newCardBackground.width - card_cut_marks_inverted.width) // 2, (newCardBackground.height - card_cut_marks_inverted.height) // 2), card_cut_marks_inverted)
+
     else:
         # Add the Card-uid_from_set
         card_editable.text((x_pos + 15,y_pos), myCard.uid_from_set, fill="black", font=card_key_font_18,anchor="lm" , align="right")
+
+        # Add the Author 
+        if (myCard.author != ""):
+            card_editable.text((120,y_pos), myCard.author, fill="black", font=card_key_font_18,anchor="lm" , align="left")
         
         if(set_logo_exist):
             # Add the Logo
             newCardBackground.paste(set_logo, (int(x_pos - 15),int(y_pos - 12 )), set_logo)
+
+        newCardBackground.paste(card_cut_marks, ((newCardBackground.width - card_cut_marks.width) // 2, (newCardBackground.height - card_cut_marks.height) // 2), card_cut_marks)
 
     # Save the final card
     card_folder = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), f"{myCard.cardset}", f"{myCard.lang}")
@@ -334,7 +365,7 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
 
 # This Function Create a Card from a given File
 # TODO: Create a Edit Function wich use a Base64 String
-def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from_set: str, name: str, power: str, keywords:str = None, effect:str = None, quote:str= None, use_3D_effect:ThreeDEffectKind = None):
+def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from_set: str, name: str, power: str, keywords:str = None, effect:str = None, quote:str= None, use_3D_effect:ThreeDEffectKind = None, author:str = None):
    
     pathname, extension = os.path.splitext(artwork_filename)	
 
@@ -347,6 +378,9 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     if (quote is None):
         quote = ""
 
+    if (author is None):
+        author = ""
+
     myCard = Card(
         uid_from_set=uid_from_set,
         lang=lang,
@@ -358,7 +392,8 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
         image_path=artwork_filename,
         filename=name,
         cardset=cardset,
-        use_3d_effect = use_3D_effect
+        use_3d_effect = use_3D_effect,
+        author=author
     )
 
     print(f"Cooking Creature '{myCard.name}'")
@@ -574,29 +609,36 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
         # Add the Card-uid_from_set
         card_editable.text((x_pos + 15,y_pos), myCard.uid_from_set, fill="white", font=card_key_font_18,anchor="lm" , align="right")
         
+        # Add the Author 
+        if (myCard.author != ""):
+            card_editable.text((120,y_pos), myCard.author, fill="white", font=card_key_font_18,anchor="lm" , align="left")
+
         if(set_logo_exist):
             # Convert the black into white
-            triggers,g,b,a = set_logo.split()
-            rgb_image = Image.merge('RGB', (triggers,g,b))
-            inverted_image = ImageOps.invert(rgb_image)
-            r2,g2,b2 = inverted_image.split()
-            inverted_set_logo = Image.merge('RGBA', (r2,g2,b2,a))
+            inverted_set_logo = InvertImgColor(set_logo)
             
             # Add the Logo
             newCardBackground.paste(inverted_set_logo, (int(x_pos - 15),int(y_pos - 12 )), inverted_set_logo)
 
+        newCardBackground.paste(card_cut_marks_inverted, ((newCardBackground.width - card_cut_marks_inverted.width) // 2, (newCardBackground.height - card_cut_marks_inverted.height) // 2), card_cut_marks_inverted)
     else:
         # Add the Card-uid_from_set
         card_editable.text((x_pos + 15,y_pos), myCard.uid_from_set, fill="black", font=card_key_font_18,anchor="lm" , align="right")
         
+        # Add the Author 
+        if (myCard.author != ""):
+            card_editable.text((120,y_pos), myCard.author, fill="black", font=card_key_font_18,anchor="lm" , align="left")
+
         if(set_logo_exist):
             # Add the Logo
             newCardBackground.paste(set_logo, (int(x_pos - 15),int(y_pos - 12 )), set_logo)
 
+        newCardBackground.paste(card_cut_marks, ((newCardBackground.width - card_cut_marks.width) // 2, (newCardBackground.height - card_cut_marks.height) // 2), card_cut_marks)
+
     # Save the final card
     card_folder = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), f"{myCard.cardset}", f"{myCard.lang}")
     Path(card_folder).mkdir(parents=True, exist_ok=True)
-    newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}.png"), format="png", dpi = (300,300), optimize= optimize_pngs)
+    newCardBackground.save(os.path.join(card_folder, f"{myCard.image_path}.png"), format="png", dpi = (300,300), optimize= optimize_pngs)
 
     # Save final Card as Base64 String
     with BytesIO() as image_binary:
@@ -631,7 +673,7 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     newCardBackground.close()
     
     tmp_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), "cropped", str(myCard.image_path))
-    Path(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang))).mkdir(parents=True, exist_ok=True)
+    Path(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), 'cropped')).mkdir(parents=True, exist_ok=True)
     final_card_without_sage_area.save(tmp_path, format="png", dpi = (300,300))
     final_card_without_sage_area.close()
 
