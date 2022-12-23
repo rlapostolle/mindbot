@@ -430,6 +430,9 @@ async def editcreaturecard(interaction: discord.Interaction, name: str, cardset:
 			db = mongodb["cardcreator"]
 			card = db["customcreatures"].find_one(filter={ "user_id": userid, "name": name ,"cardset": cardset})
 
+			if card is None:
+				await interaction.response.send_message(f'No Card found')
+				
 			# Create the Mindbug-Card
 			myEmbed = discord.Embed(title=CARD_GENERATOR_APP_NAME, url=BUG_TRACKING_URL,color = discord.Color.random(), description=embed_description)
 			myEmbed.add_field(name="Name", value="{}".format(card["name"]), inline=True) # Index 0
