@@ -10,6 +10,7 @@ Current supported commands:
 - /customcards: Display the list of cards from a user.
 - /createmindbug : Create a Mindbug Card with a given Artwork.
 - /createcreaturecard : Create a Creature Card with a given Artwork.
+- /editcreature : Edit a Card
 
 # Install
 
