@@ -432,6 +432,7 @@ async def editcreaturecard(interaction: discord.Interaction, name: str, cardset:
 
 			if card is None:
 				await interaction.response.send_message(f'No Card found')
+				return
 				
 			# Create the Mindbug-Card
 			myEmbed = discord.Embed(title=CARD_GENERATOR_APP_NAME, url=BUG_TRACKING_URL,color = discord.Color.random(), description=embed_description)
