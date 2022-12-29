@@ -27,7 +27,8 @@ class Card():
         self.use_3d_effect = 0
         self.__dict__.update(args)
             
-
+    def toStrForList(self) -> str:
+        f"{self.name} [{self.lang}]"
 
 
     def toDdObj(self):
