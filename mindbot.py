@@ -75,7 +75,7 @@ class embeddata:
 #endregion
 
 #region UI STUFF
-class EditCardData(ui.Modal, title='Edit Card Name'):
+class EditCardData(ui.Modal, title='Edit Card Data'):
 
 	def __init__(self, interaction: discord.Interaction):
 		super().__init__()
@@ -86,7 +86,7 @@ class EditCardData(ui.Modal, title='Edit Card Name'):
 		self.add_item(self.powerInput)
 		self.capabilitiesInput = ui.TextInput(label='Keywords', default=data.capabilities if data.capabilities != "?" else "", placeholder="Frenzy, Tough", required=False)
 		self.add_item(self.capabilitiesInput)
-		self.effectInput = ui.TextInput(label='Effect', default=data.effect if data.effect != "?" else "", placeholder="#Play: Draw a card. #Defeat: Gain 1 life point.", required=False)
+		self.effectInput = ui.TextInput(label='Effect', default=data.effect if data.effect != "?" else "", placeholder="#Play: Draw a card. #Defeated: Gain 1 life point.", required=False)
 		self.add_item(self.effectInput)
 		self.quoteInput = ui.TextInput(label='Quote', default=data.quote if data.quote != "?" else "", placeholder="Nothing special", required=False)
 		self.add_item(self.quoteInput)
@@ -112,16 +112,16 @@ class EditCardData(ui.Modal, title='Edit Card Name'):
 	
 		await interaction.followup.send(embed = myEmbed, view = EditMenu(), ephemeral=True)
 
-class EditCardMetaData(ui.Modal, title='Edit Card Name'):
+class EditCardMetaData(ui.Modal, title='Edit Card Metadata'):
 	
 	def __init__(self, interaction: discord.Interaction):
 		super().__init__()
 		data = embeddata(interaction)
 		self.languageInput = ui.TextInput(label='Language', default=data.language, placeholder="en", required=True, min_length=2, max_length=2)
 		self.add_item(self.languageInput)
-		self.setnameInput = ui.TextInput(label='Card Set', default=data.setname, placeholder="Second Wave", required=True)
+		self.setnameInput = ui.TextInput(label='Card Set', default=data.setname, placeholder="default", required=True)
 		self.add_item(self.setnameInput)
-		self.uid_from_setInput = ui.TextInput(label='Cardnumber', default=data.cardnumber, placeholder="1/24", required=True)
+		self.uid_from_setInput = ui.TextInput(label='Cardnumber', default=data.cardnumber, placeholder="1", required=True)
 		self.add_item(self.uid_from_setInput)
 	
 	async def on_submit(self, interaction: discord.Interaction):
