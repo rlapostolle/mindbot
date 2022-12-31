@@ -2,6 +2,7 @@
 card_outputs/
 uploaded_assets/
 mongodb/
+customcardslocal.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

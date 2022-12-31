@@ -118,6 +118,16 @@ def cleanup_triggers(myTriggers):
     myTriggers = [item.strip() for item in myTriggers]
         
     return myTriggers
+
+def decode_base64(base64_string:str) -> Image:
+    decoded_string = BytesIO(base64.b64decode(base64_string))
+    return Image.open(decoded_string)
+
+def card_as_binary(base64_string:str) -> BytesIO:
+    with BytesIO() as image_binary:
+        image_binary = BytesIO(base64.b64decode(base64_string))
+        image_binary.seek(0)
+        return image_binary
 #endregion
 
 # TODO: Safe all Input Images (Artwork, Set-Icon) as Base64 and use it in this Function
@@ -631,7 +641,7 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     newCardBackground.close()
     
     tmp_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), "cropped", str(myCard.image_path))
-    Path(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang))).mkdir(parents=True, exist_ok=True)
+    Path(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), "cropped")).mkdir(parents=True, exist_ok=True)
     final_card_without_sage_area.save(tmp_path, format="png", dpi = (300,300))
     final_card_without_sage_area.close()
 
@@ -680,7 +690,7 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
         card_backup_background.save(image_binary,format="png", dpi = (300,300))
         image_binary.seek(0)
         image_as_base64 =  base64.b64encode(image_binary.getvalue()).decode()
-        myCard.final_card_base_64 = image_as_base64
+        myCard.cropped_final_card_base64 = image_as_base64
 
     #endregion
 
