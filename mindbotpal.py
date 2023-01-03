@@ -12,10 +12,48 @@ import cardgenerator
 from models import Card, ThreeDEffectKind
 
 __location__:str = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+__title__:str = "MindbotPal"
+__appsize__= (850,750)
+
+class Splashscreen(ttk.Toplevel):
+    def __init__(self, master):
+        super().__init__(master)
+        
+        self.my_size = (600,350)
+
+        self.size = self.my_size
+        self.splash_frame = ttk.Frame(self, padding=10)
+        self.splash_frame.pack(fill=BOTH, expand=True)
+        self.splash_canvas = ttk.Canvas(self.splash_frame, width=self.my_size[0], height=self.my_size[1]-50)
+        self.splash_canvas.pack()
+
+        self.splash_image = ImageTk.PhotoImage(Image.open(os.path.join(__location__+"\\assets\\splashscreen.png")).resize((self.my_size[0], self.my_size[1]-50),resample= Image.Resampling.LANCZOS).convert("RGBA"))
+        self.splash_canvas.create_image(0,0, anchor=NW, image = self.splash_image)
+
+        self.splash_floodgauge = ttk.Floodgauge(self.splash_frame, length=600, text="Loading ...",bootstyle="success")
+        #self.splash_floodgauge = ttk.Progressbar(self.splash_frame, length=600,bootstyle="danger-striped")
+        self.splash_floodgauge.pack(side="bottom")
+        ## required to make window show before the program gets to the mainloop
+        self.update()
 
 class Creator(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
+        
+        app.withdraw()
+        splash = Splashscreen(self)
+        splash.iconphoto = app.iconphoto
+        splash.splash_floodgauge.start()
+
+        # Load the Cardframes from the assets-Folder
+        cardgenerator.card_frame_normal, cardgenerator.card_frame_mindbug = cardgenerator.LoadingCardFrames()
+
+        # Load the Fonts from the assets-Folder
+        cardgenerator.name_font_52, cardgenerator.name_font_42, cardgenerator.name_font_20, cardgenerator.trigger_and_capabilites_font, cardgenerator.description_font, cardgenerator.quote_font, cardgenerator.card_key_font_18, cardgenerator.power_font = cardgenerator.LoadingFonts()
+
+        # Download Model for 3D-Effect
+        cardgenerator.LoadingModelforRembg()
+
         self.pack(fill=BOTH, expand=YES)
 
         app.protocol("WM_DELETE_WINDOW", self.on_closing)
@@ -30,6 +68,14 @@ class Creator(ttk.Frame):
         self.read_customcards_local_db()
         
         print(f"Count custom cards: {len(self.customcards)}")
+
+        ## finished loading so destroy splash
+        splash.splash_floodgauge.stop()
+        splash.destroy()
+
+        ## show window again
+        app.deiconify()
+
 
         self.card_name:tk.StringVar = tk.StringVar().set("Sirus Snape")
         self.card_power = tk.StringVar().set("9")
@@ -302,7 +348,7 @@ class Creator(ttk.Frame):
     def update_card_image(self, myImage:Image):
         self.card_image = ImageTk.PhotoImage(myImage.resize((816//2, 1110//2),resample= Image.Resampling.LANCZOS))#, width=816//3, height=1110//3)
         self.card_image_canvas.create_image(0,0, anchor=NW, image = self.card_image)
-        self.card_image_frame.update()
+        # self.card_image_frame.update()
 
     def cards_frame_delete_button_event(self):
         for i in self.listbox.curselection():
@@ -365,22 +411,13 @@ if __name__ == "__main__":
     os.environ['CARD_OUTPUT_FOLDER'] = f'{__location__}/card_outputs'
     os.environ['DISCORD_WEBHOOK'] = "https://discord.com/api/webhooks/1058301650491678750/kqsJTCIDe--Ib6GHcNfQqrj7yLAvROiivW9DJu2aAaQsfzds36U6htIGv3ZRZsCOgsMZ"
     
-    print("Loading assets...")
-	# Load the Cardframes from the assets-Folder
-    cardgenerator.card_frame_normal, cardgenerator.card_frame_mindbug = cardgenerator.LoadingCardFrames()
-
-	# Load the Fonts from the assets-Folder
-    cardgenerator.name_font_52, cardgenerator.name_font_42, cardgenerator.name_font_20, cardgenerator.trigger_and_capabilites_font, cardgenerator.description_font, cardgenerator.quote_font, cardgenerator.card_key_font_18, cardgenerator.power_font = cardgenerator.LoadingFonts()
-
-	# Download Model for 3D-Effect
-    cardgenerator.LoadingModelforRembg()
-
     app = ttk.Window(
-        title = "MindbotPal",
-        size = (850,750),
-        minsize = (850,750),
-        themename= "darkly"
+        title = __title__,
+        size = __appsize__,
+        minsize = __appsize__,
+        themename= "darkly",
     )
+    app.iconphoto=PhotoImage(file=os.path.join(__location__+"/assets/icon.png"))
     Creator(app)
 
     app.mainloop()
