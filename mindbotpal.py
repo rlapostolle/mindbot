@@ -285,6 +285,9 @@ class Creator(ttk.Frame):
             )
 
             if (self.edit_card_index != None):
+                # Update version
+                old_card = self.customcards[self.edit_card_index]
+                myCard.version = old_card.version + 1
                 self.customcards[self.edit_card_index] = myCard
             else:
                 self.customcards.append(myCard)
