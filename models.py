@@ -3,7 +3,7 @@ from enum import IntEnum
 
 # This needs to be redesigned, it is only for the first test
 class Card():
-    def __init__(self, uid_from_set, lang, name, power, keywords, effect, quote, image_path, filename, cardset = "", use_3d_effect = 0): 
+    def __init__(self, uid_from_set, lang, name, power, keywords, effect, quote, image_path, filename, cardset = "", use_3d_effect = 0, version = 1): 
         self.uid_from_set = uid_from_set # 0
         self.lang = lang # 1
         self.name = name # 3
@@ -20,10 +20,12 @@ class Card():
         self.final_card_base_64 = ""
         self.artwork_base64 = ""
         self.set_icon_base64 = ""
+        self.version = version
 
     #Used to init from a db record
     def __init__(self, **args):
         # added late in dev, force default value in case not present
+        self.version = 1
         self.use_3d_effect = 0
         self.__dict__.update(args)
             
@@ -46,7 +48,8 @@ class Card():
             'quote': self.quote,
             'image_path': self.image_path,
             'filename':self.filename,
-            'use_3d_effect':self.use_3d_effect
+            'use_3d_effect':self.use_3d_effect,
+            'version':self.version
         }
 
     def relativePath(self):
