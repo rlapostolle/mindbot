@@ -18,7 +18,6 @@ __appsize__= (850,750)
 class Splashscreen(ttk.Toplevel):
     def __init__(self, master):
         super().__init__(master)
-        
         self.my_size = (600,350)
 
         self.size = self.my_size
@@ -42,7 +41,7 @@ class Creator(ttk.Frame):
         
         app.withdraw()
         splash = Splashscreen(self)
-        splash.iconphoto = app.iconphoto
+        splash.title(__title__)
         splash.splash_floodgauge.start()
 
         # Load the Cardframes from the assets-Folder
@@ -77,15 +76,15 @@ class Creator(ttk.Frame):
         app.deiconify()
 
 
-        self.card_name:tk.StringVar = tk.StringVar().set("Sirus Snape")
-        self.card_power = tk.StringVar().set("9")
-        self.card_capabilities = tk.StringVar()
-        self.card_effect = tk.StringVar()
-        self.card_quote = tk.StringVar()
-        self.card_lang = tk.StringVar().set("en")
-        self.card_cardset = tk.StringVar().set("default")
-        self.card_cardnumber = tk.StringVar().set("1")
-        self.card_author = tk.StringVar()
+        self.card_name:tk.StringVar = tk.StringVar(self, name="card_name").set("Sirus Snape")
+        self.card_power:tk.StringVar = tk.StringVar(self,name="card_power").set("9")
+        self.card_capabilities:tk.StringVar = tk.StringVar(self,name="card_capabilities")
+        self.card_effect:tk.StringVar = tk.StringVar(self,name="card_effect")
+        self.card_quote:tk.StringVar = tk.StringVar(self,name="card_quote")
+        self.card_lang:tk.StringVar = tk.StringVar(self,name="card_lang").set("en")
+        self.card_cardset:tk.StringVar = tk.StringVar(self,name="card_set").set("default")
+        self.card_cardnumber:tk.StringVar = tk.StringVar(self,name="card_cardnumber").set("1")
+        self.card_author:tk.StringVar = tk.StringVar(self,name="card_author").set("Potter")
         self.card_artwork_filename:str = None
 
 
@@ -105,16 +104,13 @@ class Creator(ttk.Frame):
         self.navigation_frame.grid(row=0, column=0, sticky="nsew")
         # self.navigation_frame.grid_rowconfigure(0, weight=1)
 
-        self.navigation_frame_label = ttk.Label(self.navigation_frame, text="  Image Example")
-        self.navigation_frame_label.grid(row=0, column=0, padx=20, pady=20, sticky="nw")
-
         self.cards_button = ttk.Button(self.navigation_frame, text="Cards", width=20, command=self.card_frame_button_event)
         self.cards_button.grid(row=1, column=0, padx=4, pady=4)
 
         self.home_button = ttk.Button(self.navigation_frame, text="Add", width=20,command=self.home_button_event)
         self.home_button.grid(row=2, column=0, padx=4, pady=4)
 
-        self.sheetcreator_button = ttk.Button(self.navigation_frame, width=20,text="Sheet Creator",command=self.card_frame_button_event)
+        self.sheetcreator_button = ttk.Button(self.navigation_frame, width=20,text="Sheet Creator",command=self.cardsheetcreator_frame_button_event)
         self.sheetcreator_button.grid(row=3, column=0, padx=4, pady=4)
 
         # create home frame
@@ -197,7 +193,7 @@ class Creator(ttk.Frame):
 
         # TODO: Vorschaubutton
 
-        self.home_frame_button_1 = ttk.Button(self.card_data_label_frame, text="SUBMIT",compound="left", command=self.home_frame_submit_button_event, width=80)
+        self.home_frame_button_1 = ttk.Button(self.card_data_label_frame, text="SUBMIT",compound="left", command=self.home_frame_submit_button_event, width=80, bootstyle="success")
         self.home_frame_button_1.pack(fill=X, padx= 4, pady=4)
 
         # created cards frame
@@ -226,6 +222,12 @@ class Creator(ttk.Frame):
         scrollbar = ttk.Scrollbar(self.listbox, command=self.listbox.yview)
         scrollbar.pack(side="right", fill=tk.Y, padx=4, pady=4)
         
+        self.cardsheetcreator_frame = ttk.Frame(self)
+        self.cardsheetcreator_frame.grid(row=0, column=1, sticky="nsew")
+        self.cardsheetcreator_frame.grid_columnconfigure(0, weight=1)
+        self.cardsheetcreator_frame_label = ttk.Label(self.cardsheetcreator_frame, text="Cooming soon.")
+        self.cardsheetcreator_frame_label.pack(fill=BOTH, expand=True)
+
         # select default frame
         self.select_frame_by_name("add")
 
@@ -244,11 +246,11 @@ class Creator(ttk.Frame):
         else:
             self.cards_frame.grid_forget()
 
-        # if name == "sheetcreator":
-        #     self.third_frame.grid(row=0, column=1, sticky="nsew")
-        #     self.active_frame = "sheetcreator"
-        # else:
-        #     self.third_frame.grid_forget()
+        if name == "sheetcreator":
+            self.cardsheetcreator_frame.grid(row=0, column=1, sticky="nsew")
+            self.active_frame = "sheetcreator"
+        else:
+            self.cardsheetcreator_frame.grid_forget()
 
     def home_button_event(self):
 
@@ -262,8 +264,8 @@ class Creator(ttk.Frame):
     def card_frame_button_event(self):
         self.select_frame_by_name("cards")
 
-    # def frame_3_button_event(self):
-    #     self.select_frame_by_name("frame_3")
+    def cardsheetcreator_frame_button_event(self):
+        self.select_frame_by_name("sheetcreator")
 
     def home_frame_submit_button_event(self):
         card_backup_background, myCard = cardgenerator.CreateACreatureCard(
@@ -298,25 +300,37 @@ class Creator(ttk.Frame):
         for card in self.customcards:
             self.listbox.insert(tk.END, card.toStrForList())
 
-    def clear_card_data(self):
+    def clear_card_data(self, all:bool = False):
+        
         self.card_name_entry.delete(0, tk.END)
         self.card_power_entry.delete(0,tk.END)
         self.card_capabilities_entry.delete(0,tk.END)
         self.card_effect_entry.delete(0,tk.END)
         self.card_quote_entry.delete(0,tk.END)
-        # self.card_language_entry.delete(0,tk.END)
-        # self.card_cardset_entry.delete(0,tk.END)
         self.card_cardnumber_entry.delete(0,tk.END)
-        # self.card_author_entry.delete(0,tk.END)
         self.update_card_image(Image.open(os.path.join(__location__, "assets\\cardback.png")))
+
+        if all:
+            self.card_language_entry.delete(0,tk.END)
+            self.card_cardset_entry.delete(0,tk.END)  
+            self.card_author_entry.delete(0,tk.END)
+
       
 
     def cards_frame_edit_button_event(self):
         self.select_frame_by_name("add")
+        self.clear_card_data(all=True)
         for i in self.listbox.curselection():
-            myCard = self.customcards[i]
-            # self.card_name.set(myCard.name)
-            # self.card_power.set(myCard.name)
+            myCard:Card = self.customcards[i]
+            self.card_name_entry.insert(0,myCard.name)
+            self.card_power_entry.insert(0,myCard.power)
+            self.card_capabilities_entry.insert(0,myCard.keywords)
+            self.card_effect_entry.insert(0,myCard.effect)
+            self.card_quote_entry.insert(0,myCard.quote)
+            self.card_language_entry.insert(0,myCard.lang)
+            self.card_cardset_entry.insert(0,myCard.cardset)
+            self.card_cardnumber_entry.insert(0,myCard.uid_from_set)
+            # self.card_author_entry.insert(0,myCard.author) # TODO
 
             self.update_card_image(cardgenerator.decode_base64(myCard.cropped_final_card_base64))
 
@@ -417,7 +431,7 @@ if __name__ == "__main__":
         minsize = __appsize__,
         themename= "darkly",
     )
-    app.iconphoto=PhotoImage(file=os.path.join(__location__+"/assets/icon.png"))
+    # app.iconphoto(True, PhotoImage(name="icon", file=os.path.join(__location__+"\\assets\\icon.png")))
     Creator(app)
 
     app.mainloop()
