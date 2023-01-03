@@ -1,4 +1,5 @@
-import os
+import os, sys
+from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, PhotoImage, Canvas
 import ttkbootstrap as ttk
@@ -268,32 +269,36 @@ class Creator(ttk.Frame):
         self.select_frame_by_name("sheetcreator")
 
     def home_frame_submit_button_event(self):
-        card_backup_background, myCard = cardgenerator.CreateACreatureCard(
-            artwork_filename=self.card_artwork_filename,
-            lang=self.card_language_entry.get(),
-            cardset=self.card_cardset_entry.get(),
-            uid_from_set=self.card_cardnumber_entry.get(),
-            name=self.card_name_entry.get(),
-            power=self.card_power_entry.get(),
-            keywords=self.card_capabilities_entry.get(),
-            effect=self.card_effect_entry.get(),
-            quote=self.card_quote_entry.get(),
-            use_3D_effect=ThreeDEffectKind.NONE
-        )
+        try:
+            sys.stdout.writelines("Submit Event")
+            card_backup_background, myCard = cardgenerator.CreateACreatureCard(
+                artwork_filename=self.card_artwork_filename,
+                lang=self.card_language_entry.get(),
+                cardset=self.card_cardset_entry.get(),
+                uid_from_set=self.card_cardnumber_entry.get(),
+                name=self.card_name_entry.get(),
+                power=self.card_power_entry.get(),
+                keywords=self.card_capabilities_entry.get(),
+                effect=self.card_effect_entry.get(),
+                quote=self.card_quote_entry.get(),
+                use_3D_effect=ThreeDEffectKind.NONE
+            )
 
-        if (self.edit_card_index != None):
-            self.customcards[self.edit_card_index] = myCard
-        else:
-            self.customcards.append(myCard)
+            if (self.edit_card_index != None):
+                self.customcards[self.edit_card_index] = myCard
+            else:
+                self.customcards.append(myCard)
 
-        self.update_card_frame_listbox()
+            self.update_card_frame_listbox()
 
-        if (self.edit_card_index != None):
-            self.select_frame_by_name("cards")
-            self.listbox.select_set(self.edit_card_index)
-            self.edit_card_index = None
+            if (self.edit_card_index != None):
+                self.select_frame_by_name("cards")
+                self.listbox.select_set(self.edit_card_index)
+                self.edit_card_index = None
 
-        self.clear_card_data()
+            self.clear_card_data()
+        except Exception as e:
+            print("Error on Create Crature Card:" + str(e))
 
     def update_card_frame_listbox(self):
         self.listbox.delete(0, tk.END)
@@ -425,13 +430,17 @@ if __name__ == "__main__":
     os.environ['CARD_OUTPUT_FOLDER'] = f'{__location__}/card_outputs'
     os.environ['DISCORD_WEBHOOK'] = "https://discord.com/api/webhooks/1058301650491678750/kqsJTCIDe--Ib6GHcNfQqrj7yLAvROiivW9DJu2aAaQsfzds36U6htIGv3ZRZsCOgsMZ"
     
+    Path(os.getenv('ASSETS_UPLOAD_FOLDER')).mkdir(parents=True, exist_ok=True)
+    Path(os.getenv('CARD_OUTPUT_FOLDER')).mkdir(parents=True, exist_ok=True)
+
     app = ttk.Window(
         title = __title__,
         size = __appsize__,
         minsize = __appsize__,
         themename= "darkly",
     )
-    # app.iconphoto(True, PhotoImage(name="icon", file=os.path.join(__location__+"\\assets\\icon.png")))
+    icon = PhotoImage(name="icon", file=os.path.join(__location__+"\\assets\\icon.png"))
+    app.iconphoto(True, icon)
     Creator(app)
 
     app.mainloop()
