@@ -1,6 +1,9 @@
 import os, cv2, base64
 from io import BytesIO
+from datetime import datetime
+from json import dumps
 from PIL import Image, ImageFont, ImageDraw, ImageFilter, ImageOps
+from PIL.PngImagePlugin import PngInfo
 from pathlib import Path
 from models import Card, ThreeDEffectKind
 from rembg import remove
@@ -17,6 +20,7 @@ description_font = None
 quote_font = None
 card_key_font_18 = None
 power_font = None
+__Copyyright__:str = "Copyright 2023 Nerdlab Games (Tagnition GmbH). All Rights Reserved."
 
 #region HELPER FUNC
 def LoadingModelforRembg():
@@ -123,11 +127,27 @@ def decode_base64(base64_string:str) -> Image:
     decoded_string = BytesIO(base64.b64decode(base64_string))
     return Image.open(decoded_string)
 
-def card_as_binary(base64_string:str) -> BytesIO:
-    with BytesIO() as image_binary:
-        image_binary = BytesIO(base64.b64decode(base64_string))
-        image_binary.seek(0)
-        return image_binary
+def save_pnginfos_in_tmpCard(myCard:Card, myMetaData:PngInfo) -> str:
+    tmpImage = Image.open(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), "cropped", str(myCard.image_path)))
+    tmpPath = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), "tmp")
+    Path(tmpPath).mkdir(parents=True, exist_ok=True)
+    tmpImage.save(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'),"tmp","tmp.png"), 'PNG', dpi = (300,300), pnginfo=myMetaData)
+    return os.path.join(os.getenv('CARD_OUTPUT_FOLDER'),"tmp","tmp.png")
+
+def create_extra_pnginfos(myCard:Card, forDiscord:bool = False) -> PngInfo:
+    metadata = PngInfo()
+    metadata.add_text("Copyright", __Copyyright__)
+    # myCard.author, # Artist Name
+    metadata.add_text("Cardnumber", myCard.uid_from_set)
+    metadata.add_text("DateTime", datetime.now().isoformat())
+    metadata.add_text("ImageName", myCard.name)
+    metadata.add_text("CardObj", dumps(myCard.toDdObj()))
+
+    if(forDiscord):
+        metadata.add_text("OriginalArtworkBase64", myCard.artwork_base64)
+        metadata.add_text("CardWithCutAreaBase64", myCard.final_card_base_64)
+    return metadata
+
 #endregion
 
 # TODO: Safe all Input Images (Artwork, Set-Icon) as Base64 and use it in this Function
@@ -147,6 +167,8 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
         image_path=artwork_filename,
         filename=pathname.split('/')[-1]
     )
+
+    metadata = create_extra_pnginfos(myCard=myCard)
 
     # Empty Card
     newCardBackground = Image.new("RGBA", (816,1110), (0,0,0,0))
@@ -250,7 +272,7 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
     # Save the final card
     card_folder = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), f"{myCard.cardset}", f"{myCard.lang}")
     Path(card_folder).mkdir(parents=True, exist_ok=True)
-    newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}.png"), format="png", dpi = (300,300), optimize= optimize_pngs)
+    newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}.png"), format="png", dpi = (300,300), optimize= optimize_pngs, pnginfo=metadata)
     
     # Save final Card as Base64 String
     with BytesIO() as image_binary:
@@ -328,7 +350,7 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
 
     # Paste the frontImage at (width, height)
     card_backup_background.paste(clean_card, (x_pos, y_pos), clean_card)
-    card_backup_background.save(tmp_path,format="png", dpi = (300,300), optimize= optimize_pngs)
+    card_backup_background.save(tmp_path,format="png", dpi = (300,300), optimize= optimize_pngs, pnginfo=metadata)
 
     # Save cropped final Card as Base64 String
     with BytesIO() as image_binary:
@@ -346,6 +368,7 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
 # TODO: Create a Edit Function wich use a Base64 String
 def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from_set: str, name: str, power: str, keywords:str = None, effect:str = None, quote:str= None, use_3D_effect:ThreeDEffectKind = None):
    
+    print(artwork_filename)
     pathname, extension = os.path.splitext(artwork_filename)	
 
     if (keywords is None):
@@ -371,6 +394,7 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
         use_3d_effect = use_3D_effect
     )
 
+    metadata = create_extra_pnginfos(myCard=myCard)
     print(f"Cooking Creature '{myCard.name}'")
     
     # Empty Card
@@ -392,7 +416,7 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     creature_image_blurred = creature_image.resize((816, 1110),resample= Image.Resampling.LANCZOS)
     creature_image_blurred = creature_image_blurred.convert("RGBA")
     creature_image_blurred = creature_image_blurred.filter(ImageFilter.BoxBlur(48))
-    
+
     # Calculate width to be at the center
     x_pos = (newCardBackground.width - creature_image_blurred.width) // 2
     
@@ -606,7 +630,7 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     # Save the final card
     card_folder = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), f"{myCard.cardset}", f"{myCard.lang}")
     Path(card_folder).mkdir(parents=True, exist_ok=True)
-    newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}.png"), format="png", dpi = (300,300), optimize= optimize_pngs)
+    newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}.png"), format="png", dpi = (300,300), optimize= optimize_pngs, pnginfo=metadata)
 
     # Save final Card as Base64 String
     with BytesIO() as image_binary:
@@ -683,8 +707,8 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
 
     # Paste the frontImage at (width, height)
     card_backup_background.paste(clean_card, (x_pos, y_pos), clean_card)
-    card_backup_background.save(tmp_path,format="png", dpi = (300,300), optimize= optimize_pngs)
-
+    card_backup_background.save(tmp_path,format="png", dpi = (300,300), optimize= optimize_pngs, pnginfo=metadata)
+  
     # Save cropped final Card as Base64 String
     with BytesIO() as image_binary:
         card_backup_background.save(image_binary,format="png", dpi = (300,300))
@@ -695,5 +719,6 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     #endregion
 
     clean_card.close()
+    card_backup_background.close()
 
-    return card_backup_background, myCard
+    return Image.open(tmp_path), myCard

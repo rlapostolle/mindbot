@@ -45,6 +45,11 @@ async def checkUserId(interaction: discord.Interaction, usertag: str):
 #region CONF
 intents = discord.Intents.default()
 intents.message_content = True
+# intents.dm_messages = True # For Verfication
+# intents.guild_messages = True
+# intents.members=True
+
+
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
@@ -415,7 +420,18 @@ async def createcreaturecard(interaction: discord.Interaction, artwork : discord
 		print("Error on Create Crature Card:" + str(e))
 		await interaction.followup.send(f"I choked and had to abort.")
 
+@client.event
+async def on_message(message):
+	if message.content.startswith(">MindbotPal: "):
+		print("Message")
+		# await message.delete()
 
+		if message.attachments.size > 0:
+			print("There is an attachment")
+		else:
+			print("There is no attachment")
+
+		await client.invoke(msg)
 
 
 @client.event

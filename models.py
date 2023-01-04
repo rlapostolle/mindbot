@@ -33,7 +33,7 @@ class Card():
         return f"{self.name} [{self.lang}]"
 
     def toCSVLine(self) -> str:
-        return f"{self.uid_from_set},{self.lang},{self.name},{self.power},{self.keywords},{self.effect},{self.quote},{self.image_path},{self.filename},{self.cardset},{self.use_3d_effect},{self.cropped_final_card_base64},{self.final_card_base_64},{self.artwork_base64},\n"
+        return f"{self.uid_from_set},{self.lang},{self.name},{self.power},{self.keywords},{self.effect},{self.quote},{self.image_path},{self.filename},{self.cardset},{self.use_3d_effect},{self.cropped_final_card_base64},{self.final_card_base_64},{self.artwork_base64},{self.version},\n"
         
 
     def toDdObj(self):

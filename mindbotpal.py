@@ -1,4 +1,6 @@
-import os, sys
+import os
+import sys
+from sys import platform
 from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, PhotoImage, Canvas
@@ -8,6 +10,7 @@ from ttkbootstrap.constants import *
 import discord
 from discord import SyncWebhook
 from PIL import Image, ImageTk
+from PIL.PngImagePlugin import PngInfo
 
 import cardgenerator
 from models import Card, ThreeDEffectKind
@@ -20,8 +23,9 @@ class Splashscreen(ttk.Toplevel):
     def __init__(self, master):
         super().__init__(master)
         self.my_size = (600,350)
-        
+    
         self.overrideredirect(True) #Hide the Titlebar
+        self.geometry(f"+{self.winfo_screenwidth()//2-self.my_size[0]//2}+{self.winfo_screenheight()//2-self.my_size[1]//2}")
         self.size = self.my_size
         self.splash_frame = ttk.Frame(self, padding=10)
         self.splash_frame.pack(fill=BOTH, expand=True)
@@ -95,18 +99,21 @@ class Creator(ttk.Frame):
         self.rowconfigure(0, weight=1)
         
 
-        # load images with light and dark mode image
-        image_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".\\assets")
-        self.logo_image = PhotoImage(os.path.join(image_path, "CustomTkinter_logo_single.png"), width=26, height=26)
-        self.image_icon_image = PhotoImage(os.path.join(image_path, "image_icon_light.png"), width=20, height=20)
-        self.home_image = PhotoImage(os.path.join(image_path, "home_dark.png"), width=20, height=20)
+        # load icons
+        # TODO: Doesnt work at the Moment
+        self.icons = [
+            PhotoImage(
+                name='home', 
+                file= __location__+"\\assets\\home_light.png", 
+                width=20, height=20)
+        ]
 
         # create navigation frame - col 1
         self.navigation_frame = ttk.Frame(self, padding=10)
         self.navigation_frame.grid(row=0, column=0, sticky="nsew")
         # self.navigation_frame.grid_rowconfigure(0, weight=1)
 
-        self.cards_button = ttk.Button(self.navigation_frame, text="Cards", width=20, command=self.card_frame_button_event)
+        self.cards_button = ttk.Button(self.navigation_frame, text="Cards", width=20,  compound = LEFT , command=self.card_frame_button_event)
         self.cards_button.grid(row=1, column=0, padx=4, pady=4)
 
         self.home_button = ttk.Button(self.navigation_frame, text="Add", width=20,command=self.home_button_event)
@@ -130,7 +137,7 @@ class Creator(ttk.Frame):
 
         self.card_image_canvas = Canvas(self.card_image_frame, width=816//2, height=1110//2)
         self.card_image_canvas.pack()
-        self.update_card_image(Image.open(os.path.join(image_path, "cardback.png")))
+        self.update_card_image(Image.open(__location__+"\\assets\\cardback.png"))
 
         # Second Column
         self.card_data_label_frame = ttk.Frame(self.home_frame, padding=4)
@@ -270,9 +277,9 @@ class Creator(ttk.Frame):
         self.select_frame_by_name("sheetcreator")
 
     def home_frame_submit_button_event(self):
-        try:
+        # try:
             sys.stdout.writelines("Submit Event")
-            card_backup_background, myCard = cardgenerator.CreateACreatureCard(
+            createCard, myCard = cardgenerator.CreateACreatureCard(
                 artwork_filename=self.card_artwork_filename,
                 lang=self.card_language_entry.get(),
                 cardset=self.card_cardset_entry.get(),
@@ -284,7 +291,7 @@ class Creator(ttk.Frame):
                 quote=self.card_quote_entry.get(),
                 use_3D_effect=ThreeDEffectKind.NONE
             )
-
+            print(createCard.text)
             if (self.edit_card_index != None):
                 # Update version
                 old_card = self.customcards[self.edit_card_index]
@@ -301,8 +308,8 @@ class Creator(ttk.Frame):
                 self.edit_card_index = None
 
             self.clear_card_data()
-        except Exception as e:
-            print("Error on Create Crature Card:" + str(e))
+        # except Exception as e:
+        #     print("Error on Create Crature Card:" + str(e))
 
     def update_card_frame_listbox(self):
         self.listbox.delete(0, tk.END)
@@ -339,6 +346,7 @@ class Creator(ttk.Frame):
             self.card_language_entry.insert(0,myCard.lang)
             self.card_cardset_entry.insert(0,myCard.cardset)
             self.card_cardnumber_entry.insert(0,myCard.uid_from_set)
+            self.card_artwork_filename = myCard.image_path
             # self.card_author_entry.insert(0,myCard.author) # TODO
 
             self.update_card_image(cardgenerator.decode_base64(myCard.cropped_final_card_base64))
@@ -349,8 +357,16 @@ class Creator(ttk.Frame):
         print("Send Webhook")
         for i in self.listbox.curselection():
             myCard = self.customcards[i]
-            image_binary = cardgenerator.card_as_binary(myCard.cropped_final_card_base64)
-            self.webhook.send(content="Release #1 from", file=discord.File(fp=image_binary, filename=str(myCard.image_path)))
+            print(myCard)
+            metaData = cardgenerator.create_extra_pnginfos(myCard=myCard, forDiscord=True)
+            print("Metadata created")
+
+            tmp_path = cardgenerator.save_pnginfos_in_tmpCard(myCard = myCard, myMetaData=metaData)
+            with open(file=tmp_path, mode='rb') as f:
+                my_file = discord.File(f)
+                
+            self.webhook.send(content=f">MindbotPal: Release #{myCard.version} from", file=my_file)
+            os.remove(tmp_path)
             print("Send Webhook: FINISHED")
 
     def card_artwork_button_event(self):
