@@ -20,7 +20,8 @@ class Splashscreen(ttk.Toplevel):
     def __init__(self, master):
         super().__init__(master)
         self.my_size = (600,350)
-
+        
+        self.overrideredirect(True) #Hide the Titlebar
         self.size = self.my_size
         self.splash_frame = ttk.Frame(self, padding=10)
         self.splash_frame.pack(fill=BOTH, expand=True)
