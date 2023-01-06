@@ -19,6 +19,18 @@ card_key_font_18 = None
 power_font = None
 
 #region HELPER FUNC
+def resize_card(pil_img:Image) -> Image:
+	img_width, img_height = pil_img.size
+	
+	# If an Image horizontal ora square crop from center to portrait
+	if img_width >= img_height:
+		crop_width = int(img_height // 1.4) #1038/744
+		crop_height = img_width
+		pil_img = pil_img.crop(((img_width - crop_width) // 2, (img_height - crop_height) // 2, (img_width + crop_width) // 2,(img_height + crop_height) // 2))
+		
+	#return pil_img.resize((744, 1038),resample= Image.LANCZOS)
+	return pil_img.resize((744, 1038),resample= Image.Resampling.LANCZOS)
+
 def LoadingModelforRembg():
     """Downloading the necessary Model to remove the Background from Images on first start.
     """
@@ -143,7 +155,7 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
     
     # CREATURE
     creature_image = Image.open(os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"{artwork_filename}"))
-    creature_image = creature_image.resize((744, 1038),resample= Image.Resampling.LANCZOS)
+    creature_image = resize_card(creature_image)
     creature_image = creature_image.convert("RGBA")
 
     # Create a Blurred Background so that we have a safe cutting area.
@@ -368,7 +380,7 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     
     # CREATURE AND BLURRED BACKGROUND
     creature_image = Image.open(os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"{artwork_filename}"))
-    creature_image = creature_image.resize((744, 1038),resample= Image.Resampling.LANCZOS)
+    creature_image = resize_card(creature_image)
     creature_image = creature_image.convert("RGBA")
 
     # Save Artwork as Base64 String
