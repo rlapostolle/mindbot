@@ -1,7 +1,7 @@
-import os, cv2, base64
+import os, cv2, base64, uuid
 from io import BytesIO
 from datetime import datetime
-from json import dumps
+from json import dumps, loads
 from PIL import Image, ImageFont, ImageDraw, ImageFilter, ImageOps
 from PIL.PngImagePlugin import PngInfo
 from pathlib import Path
@@ -128,11 +128,13 @@ def decode_base64(base64_string:str) -> Image:
     return Image.open(decoded_string)
 
 def save_pnginfos_in_tmpCard(myCard:Card, myMetaData:PngInfo) -> str:
-    tmpImage = Image.open(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), "cropped", str(myCard.image_path)))
+    inputtmpImage = Image.open(os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), str(myCard.image_path)))
     tmpPath = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), "tmp")
     Path(tmpPath).mkdir(parents=True, exist_ok=True)
-    tmpImage.save(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'),"tmp","tmp.png"), 'PNG', dpi = (300,300), pnginfo=myMetaData)
-    return os.path.join(os.getenv('CARD_OUTPUT_FOLDER'),"tmp","tmp.png")
+    tmpfilename = uuid.uuid4().hex
+    inputtmpImage.save(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'),"tmp",f"{tmpfilename}.png"), 'PNG', dpi = (300,300), optimize=True, pnginfo=myMetaData)
+    inputtmpImage.close()
+    return os.path.join(os.getenv('CARD_OUTPUT_FOLDER'),"tmp",f"{tmpfilename}.png")
 
 def create_extra_pnginfos(myCard:Card, forDiscord:bool = False) -> PngInfo:
     metadata = PngInfo()
@@ -144,13 +146,40 @@ def create_extra_pnginfos(myCard:Card, forDiscord:bool = False) -> PngInfo:
     metadata.add_text("CardObj", dumps(myCard.toDdObj()))
 
     if(forDiscord):
-        metadata.add_text("OriginalArtworkBase64", myCard.artwork_base64)
+        metadata.add_text("CroppedCardBase64", myCard.cropped_final_card_base64)
         metadata.add_text("CardWithCutAreaBase64", myCard.final_card_base_64)
     return metadata
 
 #endregion
+def ImportCard(import_card_path:str, filename:str):
+    newCard = Image.open(import_card_path)
+    pngInfoObj = newCard.text
+    cardInformationObj = loads(pngInfoObj["CardObj"])
+    print(cardInformationObj)
+    myCard = Card(
+    uid_from_set=cardInformationObj["uid_from_set"],
+    lang=cardInformationObj["lang"],
+    name=cardInformationObj["name"],
+    power = cardInformationObj["power"],
+    keywords=cardInformationObj["keywords"],
+    effect = cardInformationObj["effect"],
+    quote = cardInformationObj["quote"],
+    image_path=filename,
+    filename=cardInformationObj["name"],
+    cardset=cardInformationObj["cardset"],
+    use_3d_effect = cardInformationObj["use_3d_effect"],
+    version=int(cardInformationObj["version"])
+    )
+    metadata = create_extra_pnginfos(myCard=myCard)
+    croppedCardImage = decode_base64(pngInfoObj["CroppedCardBase64"])
+    croppedCardImage.save(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), "cropped", str(myCard.image_path)),format="png", dpi = (300,300), optimize= optimize_pngs, pnginfo=metadata)
 
-# TODO: Safe all Input Images (Artwork, Set-Icon) as Base64 and use it in this Function
+    CardImage = decode_base64(pngInfoObj["CardWithCutAreaBase64"])
+    CardImage.save(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), str(myCard.image_path)),format="png", dpi = (300,300), optimize= optimize_pngs, pnginfo=metadata)
+    CardImage.close()
+    return croppedCardImage, myCard
+
+
 def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_set: str):
     print("Beam a Mindbug to the World.")
     

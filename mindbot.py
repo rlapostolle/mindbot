@@ -19,12 +19,12 @@ BUG_TRACKING_URL="https://github.com/rlapostolle/mindbot/issues"
 #region DB STUFF
 mongodb = MongoClient(host = os.getenv('DB_HOST'), port = int(os.getenv('DB_PORT')))
 
-def saveCardinDB(myInteraction: discord.Interaction, myCardToSave: Card, existing_obj:dict=None):
+def saveCardinDB(myUser: discord.User, myCardToSave: Card, existing_obj:dict=None):
 	print(myCardToSave.filename)
 	db = mongodb["cardcreator"]
 	obj = myCardToSave.toDdObj()
-	obj['user_id'] = myInteraction.user.id
-	obj['user_name'] = myInteraction.user.name
+	obj['user_id'] = myUser.id
+	obj['user_name'] = myUser.name
 	if existing_obj != None:
 		db["customcreatures"].replace_one(filter={ "_id" : existing_obj["_id"] }, replacement=obj, upsert=True)
 	else:
@@ -45,10 +45,7 @@ async def checkUserId(interaction: discord.Interaction, usertag: str):
 #region CONF
 intents = discord.Intents.default()
 intents.message_content = True
-# intents.dm_messages = True # For Verfication
-# intents.guild_messages = True
-# intents.members=True
-
+intents.members = True
 
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
@@ -255,7 +252,7 @@ class EditMenu(discord.ui.View):
 			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300), optimize= True)
 			image_binary.seek(0)
 			
-			saveCardinDB(interaction, finalCardObj, dbcard)
+			saveCardinDB(interaction.user, finalCardObj, dbcard)
 		
 			# await interaction.followup.send(embed = myEmbed, view = EditMenu(), file=discord.File(fp=image_binary, filename=filename), ephemeral=False)
 			message = await interaction.followup.send(content="Release #1 from <@" + str(interaction.user.id) + ">", file=discord.File(fp=image_binary, filename=data.filename), ephemeral=False)
@@ -360,7 +357,7 @@ async def createmindbugcard(interaction: discord.InteractionMessage, artwork : d
 				finalCardAsImage, finalCardObj = cardgenerator.CreateAMindbugCard(artwork_filename=artwork_filename, lang=lang, cardset=cardset, uid_from_set=uid_from_set )
 				finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300))
 				image_binary.seek(0)
-				saveCardinDB(interaction, finalCardObj)
+				saveCardinDB(interaction.user, finalCardObj)
 
 				message = await interaction.followup.send(content="Release #1 from <@" + str(interaction.user.id) + ">", file=discord.File(fp=image_binary, filename=artwork_filename), ephemeral=False)
 				await message.add_reaction('\N{THUMBS UP SIGN}')
@@ -423,15 +420,59 @@ async def createcreaturecard(interaction: discord.Interaction, artwork : discord
 @client.event
 async def on_message(message):
 	if message.content.startswith(">MindbotPal: "):
-		print("Message")
-		# await message.delete()
+		print("Message from Webhook")
+		print(message.content)
+		print(len(message.attachments))
 
-		if message.attachments.size > 0:
-			print("There is an attachment")
+		print(f"Author: {message.author}")
+		
+		myUser = None
+		for user in client.get_all_members():
+			# print(user.name)
+			if user.name == str(message.author).split("#")[0]:
+				myUser = user
+				break
+
+
+		message.attachments[0]
+		# Check if the Image is a PNG
+		ext = message.attachments[0].filename.split(".")[-1]
+		# This should never Triggered, because this Message came from our Tool
+		if ext not in image_whiteList:
+			await client.send("The artwork is not a PNG or JPG file.")
+			return
+		#rename asset with random name to avoid collision
+		artwork_filename = uuid.uuid4().hex + "." + ext
+		print(f"New Filename: {artwork_filename}")
+		# Save the Uploaded Artwork
+		save_card_path = os.path.join(os.getenv('ASSETS_UPLOAD_FOLDER'), f"{artwork_filename}")
+		await message.attachments[0].save(save_card_path)
+		
+		# Now extract the infos and save the card
+		finalCardAsImage, myCard = cardgenerator.ImportCard(save_card_path, artwork_filename)
+
+		# TODO: Save the final cards
+
+		#Check if the card does not exist yet
+		db = mongodb["cardcreator"]
+		dbcard = db["customcreatures"].find_one({ 'cardset':  myCard.cardset, 'lang': myCard.lang, 'name': myCard.name })
+		if dbcard != None:
+			if dbcard['user_id'] != myUser.id:
+				# await interaction.followup.send(f"A card name already exists in this set and you cannot modify it.", ephemeral=True)
+				print(f"A card name already exists in this set and you cannot modify it.")
+				return
+
+			print(f"Card does exist: REPLACE")
+			saveCardinDB(myUser=myUser, myCardToSave=myCard, existing_obj=dbcard)
 		else:
-			print("There is no attachment")
+			print(f"Card doesn't exist")
+			saveCardinDB(myUser=myUser, myCardToSave=myCard)
 
-		await client.invoke(msg)
+		with BytesIO() as image_binary:
+			finalCardAsImage.save(image_binary, 'PNG', dpi = (300,300))
+			image_binary.seek(0)
+			newMessage = await client.get_channel(message.channel.id).send(content=f"Release #{myCard.version} from <@" + str(myUser.id) + ">", file=discord.File(fp=image_binary, filename=artwork_filename))
+			await newMessage.add_reaction('\N{THUMBS UP SIGN}')
 
 
 @client.event

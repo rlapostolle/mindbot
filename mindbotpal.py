@@ -1,6 +1,6 @@
 import os
 import sys
-from sys import platform
+import shutil
 from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, PhotoImage, Canvas
@@ -362,12 +362,20 @@ class Creator(ttk.Frame):
             print("Metadata created")
 
             tmp_path = cardgenerator.save_pnginfos_in_tmpCard(myCard = myCard, myMetaData=metaData)
+            print(tmp_path)
             with open(file=tmp_path, mode='rb') as f:
                 my_file = discord.File(f)
+ 
                 
-            self.webhook.send(content=f">MindbotPal: Release #{myCard.version} from", file=my_file)
-            os.remove(tmp_path)
+            response = self.webhook.send(content=f">MindbotPal: New Card is beamed", username="3Fragezeichen",file=my_file, wait=True)
+            my_file.close()
+            f.close()
+            if f.closed:
+                os.remove(tmp_path)
+
             print("Send Webhook: FINISHED")
+            response.delete()
+            print("Message: DELETED")
 
     def card_artwork_button_event(self):
         f_types =[("Image Files", "*.png")]
@@ -379,7 +387,9 @@ class Creator(ttk.Frame):
         tmp_path = os.path.join(f"{os.getenv('ASSETS_UPLOAD_FOLDER')}\\{self.card_artwork_filename}")
         
         if (os.path.exists(tmp_path) == False):
-            image.save(tmp_path)
+            # TODO: Maybe correct Card Size?
+            # image = cardgenerator.cropandresizecard(image)
+            image.save(tmp_path,'PNG', dpi = (300,300), optimize=True)
 
         self.update_card_image(image)
 
@@ -441,6 +451,10 @@ class Creator(ttk.Frame):
                 db.write(card.toCSVLine())
 
         print("SAVE SUCESSFUL")
+        
+        shutil.rmtree(os.path.join(os.getenv("CARD_OUTPUT_FOLDER"), "tmp"))
+        print("PURGE TMP-FOLDER SUCESSFUL")
+
         app.destroy()
 
 if __name__ == "__main__":
