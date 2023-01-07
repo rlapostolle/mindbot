@@ -19,6 +19,46 @@ __location__:str = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__
 __title__:str = "MindbotPal"
 __appsize__= (850,750)
 
+# HELPER FUNCS
+def on_focus_in(entry):
+    if entry.cget('state') == 'disabled':
+        entry.configure(state='normal')
+        entry.delete(0, 'end')
+
+
+def on_focus_out(entry, placeholder):
+    if entry.get() == "":
+        entry.insert(0, placeholder)
+        entry.configure(state='disabled')
+        
+class PlaceholderEntry(ttk.Entry):
+    def __init__(self, master=None, placeholder='', cnf={}, fg='black',
+                 fg_placeholder='grey50', *args, **kw):
+        super().__init__(master=None, cnf={}, bg='white', *args, **kw)
+        self.fg = fg
+        self.fg_placeholder = fg_placeholder
+        self.placeholder = placeholder
+        self.bind('<FocusOut>', lambda event: self.fill_placeholder())
+        self.bind('<FocusIn>', lambda event: self.clear_box())
+        self.fill_placeholder()
+
+    def clear_box(self):
+        if not self.get() and super().get():
+            self.config(fg=self.fg)
+            self.delete(0, tk.END)
+
+    def fill_placeholder(self):
+        if not super().get():
+            self.config(fg=self.fg_placeholder)
+            self.insert(0, self.placeholder)
+    
+    def get(self):
+        content = super().get()
+        if content == self.placeholder:
+            return ''
+        return content
+#
+
 class Splashscreen(ttk.Toplevel):
     def __init__(self, master):
         super().__init__(master)
@@ -147,10 +187,16 @@ class Creator(ttk.Frame):
         self.card_name_label.pack(fill=X,padx= 4, pady=4)
         self.card_name_entry = ttk.Entry(self.card_data_label_frame,textvariable=self.card_name)
         self.card_name_entry.pack(fill=X, padx= 4, pady=(0,8))
+        self.card_name_entry.insert(0, "Place Holder X")
+        self.card_name_entry.configure(state='disabled')
+        self.card_name_entry_focus_in = self.card_name_entry.bind('<FocusIn>', lambda x: on_focus_in(self.card_name_entry))
+        self.card_name_entry_focus_out = self.card_name_entry.bind('<FocusOut>', lambda x: on_focus_out(self.card_name_entry, 'Sirus Snape Placeholder'))
+
 
         self.card_power_label = ttk.Label(self.card_data_label_frame, text="Power:",)
         self.card_power_label.pack(fill=X, padx= 4, pady=4)
-        self.card_power_entry = ttk.Entry(self.card_data_label_frame,textvariable=self.card_power, width=80)
+        #self.card_power_entry = ttk.Entry(self.card_data_label_frame,textvariable=self.card_power, width=80)
+        self.card_power_entry = PlaceholderEntry(self.card_data_label_frame, placeholder='9P')
         self.card_power_entry.pack(fill=X, padx= 4, pady=(0,8))
 
         
