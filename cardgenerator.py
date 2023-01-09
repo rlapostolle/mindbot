@@ -51,11 +51,11 @@ def LoadingFonts():
     name_font_42 = ImageFont.truetype(fontPath,42)
     name_font_20 = ImageFont.truetype(fontPath,20)
 
-    trigger_and_capabilites_font = ImageFont.truetype(__location__ + "/assets/Brandon_blk.otf",32)
+    trigger_and_capabilites_font = ImageFont.truetype(__location__ + "/assets/Brandon_blk.otf",34)
 
-    description_font = ImageFont.truetype( __location__ + "/assets/Brandon_med.otf",32)
+    description_font = ImageFont.truetype( __location__ + "/assets/Brandon_med.otf",34)
 
-    quote_font = ImageFont.truetype( __location__ + "/assets/Graphit-ThinItalic.otf", 32) # TODO: Brandon Italic Fonts
+    quote_font = ImageFont.truetype( __location__ + "/assets/Graphit-ThinItalic.otf", 30) # TODO: Brandon Italic Fonts
 
     card_key_font_18 = ImageFont.truetype( __location__ + "/assets/Brandon_blk.otf",16) # TODO: maybe in Bold? check Prints
 
