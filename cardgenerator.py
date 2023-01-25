@@ -306,8 +306,9 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
     
     newCardBackground.close()
 
-    tmp_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), "cropped", str(myCard.image_path))
-    Path(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), "cropped")).mkdir(parents=True, exist_ok=True)
+    tmp_folder_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), "cropped")
+    tmp_path = os.path.join(tmp_folder_path, str(myCard.image_path))
+    Path(tmp_folder_path).mkdir(parents=True, exist_ok=True)
     final_card_without_sage_area.save(tmp_path, format="png", dpi = (300,300))
     final_card_without_sage_area.close()
 
@@ -672,8 +673,9 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     
     newCardBackground.close()
     
-    tmp_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), "cropped", str(myCard.image_path))
-    Path(os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), 'cropped')).mkdir(parents=True, exist_ok=True)
+    tmp_folder_path = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), str(myCard.cardset), str(myCard.lang), "cropped")
+    tmp_path = os.path.join(tmp_folder_path, str(myCard.image_path))
+    Path(tmp_folder_path).mkdir(parents=True, exist_ok=True)
     final_card_without_sage_area.save(tmp_path, format="png", dpi = (300,300))
     final_card_without_sage_area.close()
 
