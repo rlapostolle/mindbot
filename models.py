@@ -48,7 +48,7 @@ class Card():
         }
 
     def relativePath(self):
-        return os.path.join(f"{self.cardset}", f"{self.lang}", "cropped", f"{self.filename}.png")
+        return os.path.join(f"{self.cardset}", f"{self.lang}", "cropped", f"{self.image_path}")
 
 class ThreeDEffectKind(IntEnum):
     NONE = 0
