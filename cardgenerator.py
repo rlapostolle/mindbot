@@ -146,7 +146,8 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
     if (author is None):
         author = ""
 
-    pathname, extension = os.path.splitext(artwork_filename)	
+    pathname, extension = os.path.splitext(artwork_filename)
+    pathname = pathname.split('/')[-1]
     myCard = Card(
         uid_from_set=uid_from_set,
         lang=lang,
@@ -156,8 +157,8 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
         keywords = "",
         effect = "",
         quote = "",
-        image_path=artwork_filename,
-        filename=pathname.split('/')[-1],
+        image_path=pathname + ".png",
+        filename=pathname,
         author = author
     )
 
@@ -271,7 +272,7 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
     # Save the final card
     card_folder = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), f"{myCard.cardset}", f"{myCard.lang}")
     Path(card_folder).mkdir(parents=True, exist_ok=True)
-    newCardBackground.save(os.path.join(card_folder, f"{myCard.filename}.png"), format="png", dpi = (300,300), optimize= optimize_pngs)
+    newCardBackground.save(os.path.join(card_folder, myCard.image_path), format="png", dpi = (300,300), optimize= optimize_pngs)
     
     # Save final Card as Base64 String
     with BytesIO() as image_binary:
@@ -368,8 +369,6 @@ def CreateAMindbugCard(artwork_filename: str, lang: str, cardset: str, uid_from_
 # TODO: Create a Edit Function wich use a Base64 String
 def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from_set: str, name: str, power: str, keywords:str = None, effect:str = None, quote:str= None, use_3D_effect:ThreeDEffectKind = None, author:str = None):
    
-    pathname, extension = os.path.splitext(artwork_filename)	
-
     if (keywords is None):
         keywords = ""
 
@@ -382,6 +381,8 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     if (author is None):
         author = ""
 
+    pathname, extension = os.path.splitext(artwork_filename)
+    pathname = pathname.split('/')[-1]
     myCard = Card(
         uid_from_set=uid_from_set,
         lang=lang,
@@ -390,8 +391,8 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
         keywords=keywords,
         effect = effect,
         quote = quote,
-        image_path=artwork_filename,
-        filename=name,
+        image_path=pathname + ".png",
+        filename=pathname,
         cardset=cardset,
         use_3d_effect = use_3D_effect,
         author=author
@@ -639,7 +640,7 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
     # Save the final card
     card_folder = os.path.join(os.getenv('CARD_OUTPUT_FOLDER'), f"{myCard.cardset}", f"{myCard.lang}")
     Path(card_folder).mkdir(parents=True, exist_ok=True)
-    newCardBackground.save(os.path.join(card_folder, f"{myCard.image_path}.png"), format="png", dpi = (300,300), optimize= optimize_pngs)
+    newCardBackground.save(os.path.join(card_folder, myCard.image_path), format="png", dpi = (300,300), optimize= optimize_pngs)
 
     # Save final Card as Base64 String
     with BytesIO() as image_binary:
