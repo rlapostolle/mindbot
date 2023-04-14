@@ -471,7 +471,8 @@ async def on_ready():
 	cardgenerator.card_frame_normal, cardgenerator.card_frame_mindbug ,cardgenerator.card_cut_marks, cardgenerator.card_cut_marks_inverted= cardgenerator.LoadingCardFrames()
 
 	# Load the Fonts from the assets-Folder
-	cardgenerator.name_font_52, cardgenerator.name_font_42, cardgenerator.name_font_20, cardgenerator.trigger_and_capabilites_font, cardgenerator.description_font, cardgenerator.quote_font, cardgenerator.card_key_font_18, cardgenerator.power_font = cardgenerator.LoadingFonts()
+	
+	cardgenerator.name_font_52, cardgenerator.name_font_42, cardgenerator.name_font_20, cardgenerator.trigger_and_capabilites_font_regular, cardgenerator.trigger_and_capabilites_font_medium,cardgenerator.trigger_and_capabilites_font_small,cardgenerator.description_font_regular,cardgenerator.description_font_medium,cardgenerator.description_font_small, cardgenerator.quote_font_regular, cardgenerator.quote_font_medium, cardgenerator.quote_font_small, cardgenerator.card_key_font_18, cardgenerator.power_font = cardgenerator.LoadingFonts()
 
 	# Download Model for 3D-Effect
 	cardgenerator.LoadingModelforRembg()

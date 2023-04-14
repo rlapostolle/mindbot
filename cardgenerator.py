@@ -14,9 +14,15 @@ card_cut_marks_inverted= None
 name_font_52 = None
 name_font_42 = None
 name_font_20 = None
-trigger_and_capabilites_font = None
-description_font = None
-quote_font = None
+trigger_and_capabilites_font_regular = None
+trigger_and_capabilites_font_medium = None
+trigger_and_capabilites_font_small = None
+description_font_regular = None
+description_font_medium = None
+description_font_small = None
+quote_font_regular = None
+quote_font_medium = None
+quote_font_small = None
 card_key_font_18 = None
 power_font = None
 
@@ -66,17 +72,27 @@ def LoadingFonts():
     name_font_42 = ImageFont.truetype(fontPath,42)
     name_font_20 = ImageFont.truetype(fontPath,20)
 
-    trigger_and_capabilites_font = ImageFont.truetype(__location__ + "/assets/Brandon_blk.otf",32)
+    fontPath = __location__ + "/assets/Brandon_blk.otf"
+    trigger_and_capabilites_font_regular = ImageFont.truetype(fontPath,32)
+    trigger_and_capabilites_font_medium = ImageFont.truetype(fontPath,28)
+    trigger_and_capabilites_font_small = ImageFont.truetype(fontPath,24)
 
-    description_font = ImageFont.truetype( __location__ + "/assets/Brandon_med.otf",32)
+    fontPath = __location__ + "/assets/Brandon_med.otf"
+    description_font_regular = ImageFont.truetype( fontPath,32)
+    description_font_medium = ImageFont.truetype( fontPath,28)
+    description_font_small = ImageFont.truetype( fontPath,24)
 
-    quote_font = ImageFont.truetype( __location__ + "/assets/Graphit-ThinItalic.otf", 32) # TODO: Brandon Italic Fonts
+    fontPath = __location__ + "/assets/Graphit-ThinItalic.otf"
+    # TODO: Brandon Italic Fonts
+    quote_font_regular = ImageFont.truetype( fontPath , 32) 
+    quote_font_medium = ImageFont.truetype( fontPath , 28) 
+    quote_font_small = ImageFont.truetype( fontPath , 24) 
 
     card_key_font_18 = ImageFont.truetype( __location__ + "/assets/Brandon_blk.otf",16) # TODO: maybe in Bold? check Prints
 
     power_font = ImageFont.truetype( __location__ + "/assets/Graphit-Black.otf" ,76)
     print("Loading card fonts: SUCESSFULL.")
-    return name_font_52, name_font_42, name_font_20, trigger_and_capabilites_font, description_font, quote_font, card_key_font_18, power_font
+    return name_font_52, name_font_42, name_font_20, trigger_and_capabilites_font_regular,trigger_and_capabilites_font_medium,trigger_and_capabilites_font_small, description_font_regular,description_font_medium,description_font_small, quote_font_regular,quote_font_medium,quote_font_small, card_key_font_18, power_font
 
 def text_wrap(text, font, max_width):
         """Wrap text base on specified width. 
@@ -494,88 +510,167 @@ def CreateACreatureCard(artwork_filename: str, lang: str, cardset: str, uid_from
         newCardBackground.paste(creature_image_clean,(x,y), creature_image_clean)
     #endregion
 
-
     # Calculate max Width from Textarea
-    max_text_area_width_on_card = card_frame_normal.width - 220
+    max_text_area_width_on_card:int = card_frame_normal.width - 220
+    max_text_area_height_on_card:int = 350
 
-    # Keywords
-    position_of_text_end_in_y = newCardBackground.height/2+275
-    capabilities = text_wrap(myCard.keywords.upper(), trigger_and_capabilites_font,max_text_area_width_on_card )
-    i = 0
-    for line in capabilities:
-        # Calculate the new Text position
-        if (i != 0):
-            position_of_text_end_in_y += 50
+    # Calculate which FontSize should be used, simple dry run without printing
+    trigger_and_capabilites_font_array = [ trigger_and_capabilites_font_regular, trigger_and_capabilites_font_medium, trigger_and_capabilites_font_small]
+    description_font_array = [description_font_regular, description_font_medium, description_font_small]
+    quote_font_array =  [ quote_font_regular, quote_font_medium, quote_font_small]
+    distance_between_lines = [50, 40, 35]
+    used_font_index = 0
+    text_height_sum = 0
+    for font_index in range(0,3):
+        text_height_sum = 0
 
-        card_editable.text((newCardBackground.width/2,position_of_text_end_in_y), line, fill="white", font=trigger_and_capabilites_font, anchor="mm" )
-        i  += 1
+        capabilities = None
+        if (len(myCard.keywords) > 0 ) :
+            capabilities = text_wrap(myCard.keywords.upper(), trigger_and_capabilites_font_array[font_index],max_text_area_width_on_card )
+            i = 0 
+            for line in capabilities:
+                # Calculate the new Text position
+                if (i != 0):
+                    text_height_sum += distance_between_lines[font_index]
+                print(trigger_and_capabilites_font_array[font_index].getbbox(line))
+                text_height_sum += trigger_and_capabilites_font_array[font_index].getbbox(line)[3]
+                i  += 1
 
-    #region DESCRIPTION    
-    if (capabilities[0] != ""):
-        # Add Offset between Keywords and Description
-        position_of_text_end_in_y += 60
-    else:
-        # Offset between Textboxborder and Descripton
-        position_of_text_end_in_y += 50
+            if (capabilities[0] != ""):
+                # Add Offset between Keywords and Description
+                text_height_sum += distance_between_lines[font_index] + 10
 
-    # Split the description to # to detect the triggers
-    triggers = cleanup_triggers(myCard.effect.split("#"))
+        triggers = None
+        if ( len(myCard.effect) > 0) :
+            # Split the description to # to detect the triggers
+            triggers = cleanup_triggers(myCard.effect.split("#"))
 
-    more_than_one_trigger = False
-    for triggersentence in triggers:
+            more_than_one_trigger = False
+            for triggersentence in triggers:
 
-        if more_than_one_trigger:
-            position_of_text_end_in_y += 50
+                if more_than_one_trigger:
+                    text_height_sum += distance_between_lines[font_index]
 
-        descriptionlines = text_wrap(triggersentence,description_font, max_text_area_width_on_card)
-        # IDEA:
-        # Calculate the Text height, then check if its fit on the card
-        # Maybe use a smaller font.
-        # max_height = description_font.getbbox(lines[0]) * lines.count
-        i = 0
-        for line in descriptionlines:
-            # Calculate the new Text position
-            if (i != 0):
-                position_of_text_end_in_y += 50
+                descriptionlines = text_wrap(triggersentence,description_font_array[font_index], max_text_area_width_on_card)
 
-            isTriggerAvailable = len(line.split(":")) == 2
-            if isTriggerAvailable:
-                trigger_word = line.split(":")[0] + ":"
+                i = 0
+                for line in descriptionlines:
+                    # Calculate the new Text position
+                    if (i != 0):
+                        text_height_sum += distance_between_lines[font_index]
+                    
+                    text_height_sum += description_font_array[font_index].getbbox(line)[3]
+                    i += 1
 
-                line_length = description_font.getlength(line)
-                trigger_word_length = trigger_and_capabilites_font.getlength(trigger_word)
-                x_pos_trigger = newCardBackground.width//2 - line_length//2 + trigger_word_length//2
+                more_than_one_trigger = True
 
-                x_pos_rest = newCardBackground.width//2 + trigger_word_length//2 + 4 #offset 4px
+        quotes = None
+        if (len(myCard.quote ) > 0 ) :
 
-                # Remove Triggerword from line for seperate printing
-                line = line.replace(trigger_word, "").strip()
-                # Printing
-                card_editable.text((x_pos_trigger,position_of_text_end_in_y), trigger_word, fille="white", font=trigger_and_capabilites_font,anchor="mm" )
-                card_editable.text((x_pos_rest,position_of_text_end_in_y), line, fille="white", font=description_font,anchor="mm" )
-            else:
-                card_editable.text((newCardBackground.width//2,position_of_text_end_in_y), line, fille="white", font=description_font,anchor="mm" )
+            if (myCard.keywords != "" and myCard.effect != ""):
+                text_height_sum += distance_between_lines[font_index]
 
-            i += 1
-        more_than_one_trigger = True
+            quotes = text_wrap(myCard.quote, quote_font_array[font_index], max_text_area_width_on_card)
+
+            i = 0
+            for line in quotes:
+                # Calculate the new Text position
+                if (i != 0):
+                    position_of_text_end_in_y += distance_between_lines[font_index]
+
+                text_height_sum += quote_font_array[font_index].getbbox(line)[3]
+                i += 1
+
+        print(f"Textheight Sum {text_height_sum}")
+        print(f"If Text Sum smaller then Max Heigt: {text_height_sum < max_text_area_height_on_card}")
+        if ( text_height_sum < max_text_area_height_on_card) :
+            print("Break")
+            used_font_index = font_index
+            break
+
+        # Fallback
+        if( font_index == 2): 
+            used_font_index = font_index
+    
+    # Startposition
+    # Add Offset to center the text
+    print(f"Selected Font Index: {font_index}")
+    print(f"Textheight Sum {text_height_sum}")
+    print(f"Offset SingleText {(max_text_area_height_on_card - text_height_sum)/2}")
+    position_of_text_end_in_y = newCardBackground.height/2 + 275 
+    
+    distance_between_lines = [50, 40, 30]
+
+    # Print Keywords
+    if (len(myCard.keywords) > 0 ) :
+        if (len(myCard.keywords) > 0 ) :
+            i = 0
+            for line in capabilities:
+                # Calculate the new Text position
+                if (i != 0):
+                    position_of_text_end_in_y += distance_between_lines[font_index]
+
+                card_editable.text((newCardBackground.width/2,position_of_text_end_in_y), line, fill="white", font=trigger_and_capabilites_font_array[used_font_index], anchor="mm" )
+                i  += 1
+
+    #region Print DESCRIPTION    
+    if ( len(myCard.effect) > 0) :
+        
+        if (capabilities != None):
+            # Add Offset between Keywords and Description
+            position_of_text_end_in_y += distance_between_lines[font_index] + 10
+
+        more_than_one_trigger = False
+        for triggersentence in triggers:
+
+            if more_than_one_trigger:
+                position_of_text_end_in_y += distance_between_lines[font_index]
+
+            descriptionlines = text_wrap(triggersentence,description_font_array[used_font_index], max_text_area_width_on_card)
+
+            i = 0
+            for line in descriptionlines:
+                # Calculate the new Text position
+                if (i != 0):
+                    position_of_text_end_in_y += distance_between_lines[font_index]
+
+                isTriggerAvailable = len(line.split(":")) == 2
+                if isTriggerAvailable:
+                    trigger_word = line.split(":")[0] + ":"
+
+                    line_length = description_font_array[used_font_index].getlength(line)
+                    trigger_word_length = trigger_and_capabilites_font_array[used_font_index].getlength(trigger_word)
+                    x_pos_trigger = newCardBackground.width//2 - line_length//2 + trigger_word_length//2
+
+                    x_pos_rest = newCardBackground.width//2 + trigger_word_length//2 + 4 #offset 4px
+
+                    # Remove Triggerword from line for separate printing
+                    line = line.replace(trigger_word, "").strip()
+                    # Printing
+                    card_editable.text((x_pos_trigger,position_of_text_end_in_y), trigger_word, fille="white", font=trigger_and_capabilites_font_array[used_font_index],anchor="mm" )
+                    card_editable.text((x_pos_rest,position_of_text_end_in_y), line, fille="white", font=description_font_array[used_font_index],anchor="mm" )
+                else:
+                    card_editable.text((newCardBackground.width//2,position_of_text_end_in_y), line, fille="white", font=description_font_array[used_font_index],anchor="mm" )
+
+                i += 1
+            more_than_one_trigger = True
     #endregion
 
-    #region QUOATES
-    if (myCard.keywords != "" and myCard.effect != ""):
-        position_of_text_end_in_y += 60
-    else:
-        position_of_text_end_in_y += 50
+    #region Print QUOATES
+    if (len(myCard.quote ) > 0 ) :
+        if (myCard.keywords != "" and myCard.effect != ""):
+            position_of_text_end_in_y += distance_between_lines[font_index] 
 
-    quotes = text_wrap(myCard.quote, quote_font, max_text_area_width_on_card)
+        quotes = text_wrap(myCard.quote, quote_font_array[used_font_index], max_text_area_width_on_card)
 
-    i = 0
-    for line in quotes:
-        # Calculate the new Text position
-        if (i != 0):
-            position_of_text_end_in_y += 40
+        i = 0
+        for line in quotes:
+            # Calculate the new Text position
+            if (i != 0):
+                position_of_text_end_in_y += distance_between_lines[font_index] 
 
-        card_editable.text((newCardBackground.width/2,position_of_text_end_in_y), line, fille="white", font=quote_font,anchor="mm" )
-        i += 1
+            card_editable.text((newCardBackground.width/2,position_of_text_end_in_y), line, fille="white", font=quote_font_array[used_font_index],anchor="mm" )
+            i += 1
     #endregion
 
 
