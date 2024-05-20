@@ -26,10 +26,10 @@ services:
 
 
   carddatabase:
-    image : mongo
+    image : mongo:5.0.20
     container_name: mongodb
     volumes:
       - ./mongodb:/data/db
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
     restart: unless-stopped
