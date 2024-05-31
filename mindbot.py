@@ -13,6 +13,7 @@ from io import BytesIO
 from discord import app_commands, ui
 from pymongo import MongoClient, ASCENDING
 import planet_explorer
+import key_distributor
 from collections import Counter
 
 CARD_GENERATOR_APP_NAME="Card Generator 0.0.3"
@@ -523,6 +524,18 @@ async def try_merge(interaction: discord.Interaction, item1:str, item2:str):
 	message = answer['message']
 
 	await interaction.followup.send(message, ephemeral=True)
+#endregion
+
+#region key distribution
+
+@tree.command(name = "steamkey", description = "Get a steam key to access the game on Steam")
+async def get_steam_key(interaction: discord.Interaction):
+	key = key_distributor.get_key(interaction.user.id, mongodb)
+	
+	message = key + "\n" + "how to redeem: https://help.steampowered.com/en/faqs/view/2A12-9D79-C3D7-F870"
+
+	await interaction.response.send_message(message, ephemeral=True)
+
 #endregion
 
 @client.event

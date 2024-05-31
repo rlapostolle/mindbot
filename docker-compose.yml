@@ -16,6 +16,9 @@ services:
       - type: bind
         source: ./card_outputs/
         target: /data/card_outputs/
+      - type: bind
+        source: ./steamkeys/
+        target: /data/steamkeys/
     environment:
       DB_HOST: mongodb
       DB_PORT: 27017
