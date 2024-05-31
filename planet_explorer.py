@@ -142,7 +142,7 @@ creatures = {
     },
     "Snail Hydra" : {
         "dna1": ["Snail"],
-        "dna2": ["Snake"],
+        "dna2": ["Snake", "Snail"],
         "item": []
     },
     "Snail Thrower" : {
@@ -152,7 +152,7 @@ creatures = {
     },
     "Spider Owl" : {
         "dna1": ["Spider"],
-        "dna2": ["Owl"],
+        "dna2": ["Bird"],
         "item": []
     },
     "Strange Barrel" : {
