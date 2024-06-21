@@ -191,7 +191,7 @@ creatures = {
         "item": []
     },
     "Creep from the Deep" : {
-        "dna1": ["Ghost"],
+        "dna1": ["Ghost", "Monster"],
         "dna2": ["Jellyfish"],
         "item": []
     },
@@ -243,11 +243,11 @@ creatures = {
     "Slugapult" : {
         "dna1": ["Snail"],
         "dna2": [],
-        "item": ["Explosive"]
+        "item": ["Explosive", "Ore"]
     },
     "Mindbug Bug" : {
         "dna1": ["Octopus"],
-        "dna2": [],
+        "dna2": ["Bug"],
         "item": ["Brain"]
     },
     "Ratomancer" : {
@@ -263,7 +263,7 @@ creatures = {
     "Boar-Zooka" : {
         "dna1": ["Pig"],
         "dna2": [],
-        "item": ["Boosters"]
+        "item": ["Boosters", "Explosive"]
     },
     "Sluggernaut" : {
         "dna1": ["Snail"],
