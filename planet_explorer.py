@@ -47,8 +47,8 @@ creatures = {
     },
     "Deathweaver" : {
         "dna1": ["Spider"],
-        "dna2": [],
-        "item": ["Poison"]
+        "dna2": ["Goblin"],
+        "item": []
     },
     "Elephantopus" : {
         "dna1": ["Elephant"],
