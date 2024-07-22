@@ -48,6 +48,8 @@ async def checkUserId(interaction: discord.Interaction, usertag: str):
 #region CONF
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
+intents.members = True
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
@@ -535,6 +537,24 @@ async def get_steam_key(interaction: discord.Interaction):
 	message = key + "\n" + "how to redeem: https://help.steampowered.com/en/faqs/view/2A12-9D79-C3D7-F870"
 
 	await interaction.response.send_message(message, ephemeral=True)
+
+#endregion
+
+#region admin commands
+
+@tree.command(name = "assignall", description = "[ADMIN] assign to all members a role")
+async def assignall(interaction: discord.Interaction, role: discord.Role):
+  if (not interaction.user.guild_permissions.manage_roles):
+    await interaction.response.send_message("Error: User is missing permission `Manage Roles`", ephemeral=True)
+    return
+  await interaction.response.defer(ephemeral=True, thinking=True)
+  for member in interaction.guild.members:
+    try:
+      await member.add_roles(role)
+    except:
+      await interaction.followup.send("Error: Can not assign role!\nPotential fix: Try moving my role above the role you want to assign to all members.", ephemeral=True)
+      return
+  await interaction.followup.send("I have successfully assigned all members that role!", ephemeral=True)
 
 #endregion
 
