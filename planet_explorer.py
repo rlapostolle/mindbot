@@ -23,7 +23,7 @@ creatures = {
     "Axolotl Healer" : {
         "dna1": ["Axolotl"],
         "dna2": [],
-        "item": ["Healing Purse"]
+        "item": ["Costume"]
     },
     "Bee Bear" : {
         "dna1": ["Bee"],
@@ -108,7 +108,7 @@ creatures = {
     "Luchataur" : {
         "dna1": ["Bull"],
         "dna2": [],
-        "item": ["Mask"]
+        "item": ["Costume"]
     },
     "Mysterious Mermaid" : {
         "dna1": ["Fish"],
@@ -172,8 +172,8 @@ creatures = {
     },
     "Tusked Extorter" : {
         "dna1": ["Elephant"],
-        "dna2": ["Human"],
-        "item": []
+        "dna2": [],
+        "item": ["Costume"]
     },
     "Urchin Hurler" : {
         "dna1": ["Urchin"],
@@ -197,8 +197,8 @@ creatures = {
     },
     "Ferret Pacifier" : {
         "dna1": ["Ferret"],
-        "dna2": ["Human"],
-        "item": []
+        "dna2": [],
+        "item": ["Costume"]
     },
     "Froblin Instigator" : {
         "dna1": ["Goblin"],
@@ -243,7 +243,7 @@ creatures = {
     "Slugapult" : {
         "dna1": ["Snail"],
         "dna2": [],
-        "item": ["Explosive", "Ore"]
+        "item": ["Explosive"]
     },
     "Mindbug Bug" : {
         "dna1": ["Octopus"],
@@ -269,6 +269,79 @@ creatures = {
         "dna1": ["Snail"],
         "dna2": [],
         "item": ["Ore"]
+    },
+
+    "Suspicious Gift" : {
+        "creature": ["Explosive Toad"],
+        "dna1": ["Horse"],
+        "dna2": [],
+        "item": []
+    },
+    "Watts Dog" : {
+        "creature": [],
+        "dna1": ["Dog"],
+        "dna2": [],
+        "item": ["Boosters"]
+    },
+    "Kitten Crewmate" : {
+        "creature": [],
+        "dna1": ["Cat"],
+        "dna2": [],
+        "item": ["Boat"]
+    },
+    "Blessed Axolotl" : {
+        "creature": ["Axolotl Healer"],
+        "dna1": [],
+        "dna2": [],
+        "item": ["Blessed Stone"]
+    },
+    "Bug Catcher" : {
+        "creature": [],
+        "dna1": ["Shark"],
+        "dna2": ["Crustacean"],
+        "item": []
+    },
+    "Cursed Goblin Werewolf" : {
+        "creature": ["Goblin Werewolf"],
+        "dna1": [],
+        "dna2": [],
+        "item": ["Cursed Stone"]
+    },
+    "Ghost Hand" : {
+        "creature": [],
+        "dna1": ["Ghost"],
+        "dna2": ["Human"],
+        "item": []
+    },
+    "Jean-Claw Pandamme" : {
+        "creature": [],
+        "dna1": ["Bear"],
+        "dna2": [],
+        "item": ["Ore"]
+    },
+    "Solar Bear" : {
+        "creature": [],
+        "dna1": ["Bear"],
+        "dna2": [],
+        "item": ["Costume"]
+    },
+    "Tuckbox Mimic" : {
+        "creature": [],
+        "dna1": ["Monster"],
+        "dna2": [],
+        "item": ["Deckbox"]
+    },
+    "Alien Brain" : {
+        "creature": [],
+        "dna1": ["Monster"],
+        "dna2": [],
+        "item": ["Brain"]
+    },
+    "Future Eric" : {
+        "creature": [],
+        "dna1": ["Dice"],
+        "dna2": [],
+        "item": ["Time Machine"]
     }
 }
 
@@ -328,7 +401,7 @@ def explore(id: str, mongodb: MongoClient):
         if dna != None:
             new_dna.append(dna)
             player['dna'].append(dna)
-    if random.randint(0, 100) < 25:
+    if random.randint(0, 100) < 35:
         item = pick_item()
         if item != None:
             new_item.append(item)
@@ -357,6 +430,38 @@ def get_inventory(id: str, mongodb: MongoClient):
         "creatures": player['creatures']
     }
 
+def leaderboard(id: str, mongodb: MongoClient):
+    db = mongodb["exploration"]
+    collection = db["players"]
+    players = collection.aggregate([
+    {
+        "$match": {
+            "creatures": { "$not": {"$size": 0} }
+        }
+    },
+    {
+        "$addFields": {
+            "count": { "$size": {"$objectToArray": "$creatures"} }, 
+            "count2": {"$sum": [{ "$size": "$dna" }, { "$size": "$items" }] }
+        }
+    },
+    {
+        "$match": {
+            "count": { "$gte": 2 }
+        }
+    },
+    { "$sort" : { "count" : -1, "count2": -1 }},
+    { "$limit" : 10 }
+    ])
+
+    message = "Leaderboard:\n"
+    for player in players:
+        message += f"<@{player['player_id']}> : {player['count']}\n"
+
+    return {
+        "message": message
+    }
+
 def try_merge(id: str, mongodb: MongoClient, item1: str, item2: str):
     db = mongodb["exploration"]
     collection = db["players"]
@@ -372,22 +477,36 @@ def try_merge(id: str, mongodb: MongoClient, item1: str, item2: str):
         try:
             player['items'].remove(item1)
         except:
-            return {
-                "message": f"You don't have {item1} available"
-            }
+            try:
+                player['creatures'].remove(item1)
+            except:
+                return {
+                    "message": f"You don't have {item1} available"
+                }
     try:
         player['dna'].remove(item2)
     except:
         try:
             player['items'].remove(item2)
         except:
-            return {
-                "message": f"You don't have {item2} available"
-            }
+            try:
+                player['creatures'].remove(item2)
+            except:
+                return {
+                    "message": f"You don't have {item2} available"
+                }
 
     for name, creature in creatures.items():
-        if (item1 in creature['dna1'] and (item2 in creature['dna2'] or item2 in creature['item'])) \
-            or ((item1 in creature['dna2'] or item1 in creature['item']) and item2 in creature['dna1']):
+        items = [item1, item2]
+        for kind in ['dna1', 'dna2', 'item', 'creature']:
+            if kind in creature and len(creature[kind]) > 0:
+                for item in items:
+                    if item in creature[kind]:
+                        items.remove(item) # Found a match
+                        break
+                    else:
+                        continue
+        if len(items) == 0: # Found a perfect match
             if name not in player['creatures']:
                 player['creatures'][name] = 1
             else:

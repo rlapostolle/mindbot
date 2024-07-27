@@ -49,7 +49,6 @@ async def checkUserId(interaction: discord.Interaction, usertag: str):
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-intents.members = True
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
@@ -522,6 +521,16 @@ async def try_merge(interaction: discord.Interaction, item1:str, item2:str):
 	await interaction.response.defer(ephemeral=True, thinking=True)
 
 	answer = planet_explorer.try_merge(interaction.user.id, mongodb, item1.strip(), item2.strip())
+	
+	message = answer['message']
+
+	await interaction.followup.send(message, ephemeral=True)
+
+@tree.command(name = "leaderboard", description = "Show the top10 players")
+async def leaderboard(interaction: discord.Interaction):
+	await interaction.response.defer(ephemeral=True, thinking=True)
+
+	answer = planet_explorer.leaderboard(interaction.user.id, mongodb)
 	
 	message = answer['message']
 
