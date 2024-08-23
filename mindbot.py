@@ -12,6 +12,9 @@ from models import Card, ThreeDEffectKind
 from io import BytesIO
 from discord import app_commands, ui
 from pymongo import MongoClient, ASCENDING
+import planet_explorer
+import key_distributor
+from collections import Counter
 
 CARD_GENERATOR_APP_NAME="Card Generator 0.0.3"
 BUG_TRACKING_URL="https://github.com/rlapostolle/mindbot/issues"
@@ -45,6 +48,7 @@ async def checkUserId(interaction: discord.Interaction, usertag: str):
 #region CONF
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
@@ -462,6 +466,106 @@ async def editcreaturecard(interaction: discord.Interaction, name: str, cardset:
 		print("Error on Edit Creature Card:" + str(e))
 		await interaction.followup.send(f"I choked and had to abort.")
 
+#region exploration game
+@tree.command(name = "useportal", description = "Explore planets using the portal to gather resources")
+async def explore_planets(interaction: discord.Interaction):
+	await interaction.response.defer(ephemeral=True, thinking=True)
+	await interaction.followup.send(f"Exploring...", ephemeral=True)
+
+	answer = planet_explorer.explore(interaction.user.id, mongodb)
+	
+	message = answer['message']
+	found = False
+	if 'dna' in answer and len(answer['dna']) > 0:
+		message += "\n You found some creatures living on this planet, you take some of their DNA for your collection."
+		for dna in answer['dna']:
+			message += "\n => You collected " + dna + "'s DNA."
+		found = True
+	if 'items' in answer and len(answer['items']) > 0:
+		message += "\n You found following items: " + ", ".join(answer['items'])
+		found = True
+	if not found:
+		message += "\n That planet was empty, you found nothing to collect, sadly..."
+
+	if 'portal_usage_left' in answer:
+		message += f"\n You have {answer['portal_usage_left']} portal usage left today."
+
+	await interaction.followup.send(message, ephemeral=True)
+
+@tree.command(name = "myinventory", description = "Your inventory (DNA, items, Creatures...)")
+async def player_inventory(interaction: discord.Interaction):
+	await interaction.response.defer(ephemeral=True, thinking=True)
+
+	answer = planet_explorer.get_inventory(interaction.user.id, mongodb)
+	
+	message = answer['message']
+	if 'dna' in answer and len(answer['dna']) > 0:
+		message += "\n\n Your available DNA:"
+		for dna, qty in sorted(Counter(answer['dna']).items(), key=lambda dna: dna[0]):
+			message += "\n- " + dna + " x" + str(qty)
+	if 'items' in answer and len(answer['items']) > 0:
+		message += "\n\n Your available items:" 
+		for item, qty in sorted(Counter(answer['items']).items(), key=lambda item: item[0]):
+			message += "\n- " + item + " x" + str(qty)
+	if 'creatures' in answer:
+		nb_creature = len(answer['creatures'])
+		if nb_creature > 0:
+			message += f"\n\n Your creatures: ({nb_creature} different)"
+			for name, qty in sorted(answer['creatures'].items(), key=lambda crea: crea[0]):
+				message += "\n- " + name + " x" + str(qty)
+
+	await interaction.followup.send(message, ephemeral=True)
+
+@tree.command(name = "trymerge", description = "Try to merge two items or DNA to create a creature.")
+async def try_merge(interaction: discord.Interaction, item1:str, item2:str):
+	await interaction.response.defer(ephemeral=True, thinking=True)
+
+	answer = planet_explorer.try_merge(interaction.user.id, mongodb, item1.strip(), item2.strip())
+	
+	message = answer['message']
+
+	await interaction.followup.send(message, ephemeral=True)
+
+@tree.command(name = "leaderboard", description = "Show the top10 players")
+async def leaderboard(interaction: discord.Interaction):
+	await interaction.response.defer(ephemeral=True, thinking=True)
+
+	answer = planet_explorer.leaderboard(interaction.user.id, mongodb)
+	
+	message = answer['message']
+
+	await interaction.followup.send(message, ephemeral=True)
+#endregion
+
+#region key distribution
+
+@tree.command(name = "steamkey", description = "Get a steam key to access the game on Steam")
+async def get_steam_key(interaction: discord.Interaction):
+	key = key_distributor.get_key(interaction.user.id, mongodb)
+	
+	message = key + "\n" + "how to redeem: https://help.steampowered.com/en/faqs/view/2A12-9D79-C3D7-F870"
+
+	await interaction.response.send_message(message, ephemeral=True)
+
+#endregion
+
+#region admin commands
+
+@tree.command(name = "assignall", description = "[ADMIN] assign to all members a role")
+async def assignall(interaction: discord.Interaction, role: discord.Role):
+  if (not interaction.user.guild_permissions.manage_roles):
+    await interaction.response.send_message("Error: User is missing permission `Manage Roles`", ephemeral=True)
+    return
+  await interaction.response.defer(ephemeral=True, thinking=True)
+  for member in interaction.guild.members:
+    try:
+      await member.add_roles(role)
+    except:
+      await interaction.followup.send("Error: Can not assign role!\nPotential fix: Try moving my role above the role you want to assign to all members.", ephemeral=True)
+      return
+  await interaction.followup.send("I have successfully assigned all members that role!", ephemeral=True)
+
+#endregion
 
 @client.event
 async def on_ready():
@@ -479,7 +583,8 @@ async def on_ready():
 
 	print("Sync commands on all discord server...")
 	#Sync the commands with all server
-	await tree.sync()
+	synced = await tree.sync()
+	print(str(len(synced)) + " commands synced")
 	print("Ready!")
 
 with open('token.txt') as f:
